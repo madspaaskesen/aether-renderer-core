@@ -79,8 +79,9 @@ Run it like this:
 
 ```bash
 cargo run -- --input examples/sacred-stars.zip --output demo.webm --fps 30 --format webm
-This will generate a loopable .webm video with alpha.
 ```
+
+This will generate a loopable .webm video with alpha.
 
 ---
 
