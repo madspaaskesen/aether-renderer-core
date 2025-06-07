@@ -38,3 +38,44 @@ pub fn unzip_frames(zip_path: &Path) -> Result<(PathBuf, tempfile::TempDir), Box
     println!("🗂️  Extracted frames to: {}", temp_path.display());
     Ok((temp_path.clone(), temp_dir))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::unzip_frames;
+    use std::io::Write;
+    use tempfile::tempdir;
+    use zip::write::{FileOptions, ZipWriter};
+    use zip::CompressionMethod;
+    use std::fs::File;
+    use std::path::Path;
+
+    // Helper to create a small zip containing two fake PNG files
+    fn create_test_zip(path: &Path) -> zip::result::ZipResult<()> {
+        let file = File::create(path)?;
+        let mut zip = ZipWriter::new(file);
+        let options = FileOptions::default().compression_method(CompressionMethod::Stored);
+
+        zip.start_file("frame_0000.png", options)?;
+        zip.write_all(b"png0")?;
+        zip.start_file("frame_0001.png", options)?;
+        zip.write_all(b"png1")?;
+        zip.finish()?;
+        Ok(())
+    }
+
+    #[test]
+    fn unzip_frames_extracts_pngs() -> Result<(), Box<dyn std::error::Error>> {
+        let dir = tempdir()?;
+        let zip_path = dir.path().join("frames.zip");
+        create_test_zip(&zip_path)?;
+
+        let (out_dir, _guard) = unzip_frames(&zip_path)?;
+
+        let count = std::fs::read_dir(&out_dir)?.count();
+        assert_eq!(count, 2);
+        assert!(out_dir.join("frame_0000.png").exists());
+        assert!(out_dir.join("frame_0001.png").exists());
+
+        Ok(())
+    }
+}
