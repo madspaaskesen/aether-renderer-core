@@ -66,6 +66,21 @@ Alpha-enabled PNGs are recommended for transparent .webm.
 
 ---
 
+## 📦 Example ZIP
+
+You can test the renderer using the provided frame sequence:
+
+[examples/sacred-stars.zip](examples/sacred-stars.zip)
+
+Run it like this:
+
+```bash
+cargo run -- --input examples/sacred-stars.zip --output demo.webm --fps 30 --format webm
+This will generate a loopable .webm video with alpha.
+```
+
+---
+
 ## 🔮 Roadmap
 
 - [x] Render `.png` → `.webm` (with alpha)
