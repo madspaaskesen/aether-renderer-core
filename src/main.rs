@@ -51,14 +51,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let palette_path = "palette.png";
 
         // Step 1: Generate palette
-        let palette_status = Command::new("ffmpeg")
+        let palette_status = match Command::new("ffmpeg")
             .args([
                 "-i", input_str,
                 "-vf", "fps=30,scale=640:-1:flags=lanczos,palettegen",
                 "-y", palette_path,
             ])
             .status()
-            .expect("⚠️ Failed to generate GIF palette");
+        {
+            Ok(s) => s,
+            Err(e) => {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    eprintln!("❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.");
+                } else {
+                    eprintln!("❌ Failed to execute ffmpeg: {}", e);
+                }
+                return Ok(());
+            }
+        };
 
         if !palette_status.success() {
             eprintln!("❌ Failed to generate palette");
@@ -66,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         // Step 2: Generate GIF using palette
-        let gif_status = Command::new("ffmpeg")
+        let gif_status = match Command::new("ffmpeg")
             .args([
                 "-framerate", &args.fps.to_string(),
                 "-i", input_str,
@@ -76,7 +86,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &args.output,
             ])
             .status()
-            .expect("⚠️ Failed to generate GIF");
+        {
+            Ok(s) => s,
+            Err(e) => {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    eprintln!("❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.");
+                } else {
+                    eprintln!("❌ Failed to execute ffmpeg: {}", e);
+                }
+                return Ok(());
+            }
+        };
 
         if gif_status.success() {
             println!("✅ GIF exported: {}", &args.output);
@@ -106,7 +126,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "yuv420p" // no alpha in mp4
     };
 
-    let status = Command::new("ffmpeg")
+    let status = match Command::new("ffmpeg")
         .args([
             "-framerate", &args.fps.to_string(),
             "-i", input_str,
@@ -118,7 +138,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ])
 
         .status()
-        .expect("⚠️ Failed to execute ffmpeg");
+    {
+        Ok(s) => s,
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                eprintln!("❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.");
+            } else {
+                eprintln!("❌ Failed to execute ffmpeg: {}", e);
+            }
+            return Ok(());
+        }
+    };
 
     if status.success() {
         println!("✅ Video exported: {}", args.output);
