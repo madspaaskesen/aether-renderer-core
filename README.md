@@ -85,7 +85,7 @@ This will generate a loopable .webm video with alpha.
 
 Here’s one frame from the sacred animation:
 
-<img src="examples/sacred-stars-preview.png" width="480" alt="Frame example">
+<img src="examples/sacred-stars-preview.png?v=2" width="480" alt="Frame example">
 
 ---
 
