@@ -81,6 +81,22 @@ This will generate a loopable .webm video with alpha.
 
 ---
 
+## ✨ Example Output
+
+Here’s one frame from the sacred animation:
+
+<img src="examples/sacred-stars-preview.png" width="480" alt="Frame example">
+
+---
+
+## ✨ Example Animation
+
+![demo](examples/sacred-stars-demo.gif)
+
+▶️ [Watch output video](examples/sacred-stars-demo.webm)
+
+---
+
 ## 🔮 Roadmap
 
 - [x] Render `.png` → `.webm` (with alpha)
