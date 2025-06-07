@@ -16,8 +16,8 @@ Built with love for artists, developers, and sacred animation workflows.
 - ✅ Export `.webm` with alpha (via `libvpx`)
 - ✅ Export `.gif` with alpha
 - ✅ `.mp4` fallback (no alpha)
- - ✅ CLI flags for FPS, input folder, output path, format
- - ✅ Optional `--fade-in` and `--fade-out` for smooth loops
+- ✅ CLI flags for FPS, input folder, output path, format
+- ✅ Optional `--fade-in` and `--fade-out` for smooth loops
 
 ---
 
@@ -125,7 +125,7 @@ See full demo here (just started):
 
 Here’s one frame from the sacred animation:
 
-<img src="https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/sacred-stars-preview.png" width="480" alt="Frame example">
+![frame](https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/sacred-stars-preview.png)
 
 ---
 
