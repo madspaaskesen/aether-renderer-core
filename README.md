@@ -93,7 +93,7 @@ Here’s one frame from the sacred animation:
 
 ![demo](examples/sacred-stars-demo.gif)
 
-▶️ [Watch output video](examples/sacred-stars-demo.webm)
+▶️ [Watch output video](https://github.com/madspaaskesen/aether-renderer-core/raw/refs/heads/main/examples/sacred-stars-demo.webm)
 
 ---
 
