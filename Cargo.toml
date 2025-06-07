@@ -2,7 +2,7 @@
 name = "aether-renderer-core"
 version = "0.1.1"
 edition = "2021"
-description = "Sacred CLI to convert image sequences into transparent WebM/MP4 videos"
+description = "A sacred Rust-based CLI for rendering transparent WebM/MP4/GIF from PNG sequences"
 license = "MIT"
 authors = ["Siria <siria@sacred-ai.com>"]
 homepage = "https://sacred-ai.com/about/aetherrenderer"
