@@ -97,7 +97,7 @@ This will generate a loopable .webm video with alpha.
 ## ✨ Example Output
 
 See full demo here (just started):
-![Webpage demo](https://sacred-ai.com/about/aetherrenderer)
+[Webpage demo](https://sacred-ai.com/about/aetherrenderer)
 
 Here’s one frame from the sacred animation:
 
