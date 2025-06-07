@@ -64,3 +64,65 @@ fn cli_renders_webm() -> Result<(), Box<dyn std::error::Error>> {
     // TempDir cleans up automatically
     Ok(())
 }
+
+#[test]
+fn cli_errors_on_invalid_zip() -> Result<(), Box<dyn std::error::Error>> {
+    let zip_path = Path::new("tests/testdata/two-frames-error.zip");
+    assert!(zip_path.exists(), "test zip not found: {}", zip_path.display());
+
+    let status = Command::new("cargo")
+        .args([
+            "run",
+            "--quiet",
+            "--",
+            "--input",
+            zip_path.to_str().unwrap(),
+            "--output",
+            "out.webm",
+        ])
+        .status()?;
+
+    assert!(!status.success(), "expected failure for invalid zip input");
+    Ok(())
+}
+
+#[test]
+fn cli_errors_on_missing_folder() -> Result<(), Box<dyn std::error::Error>> {
+    let missing = Path::new("tests/testdata/does_not_exist");
+    assert!(!missing.exists());
+
+    let status = Command::new("cargo")
+        .args([
+            "run",
+            "--quiet",
+            "--",
+            "--input",
+            missing.to_str().unwrap(),
+            "--output",
+            "out.webm",
+        ])
+        .status()?;
+
+    assert!(!status.success(), "expected failure for missing input folder");
+    Ok(())
+}
+
+#[test]
+fn cli_errors_on_empty_folder() -> Result<(), Box<dyn std::error::Error>> {
+    let tmp = tempdir()?;
+
+    let status = Command::new("cargo")
+        .args([
+            "run",
+            "--quiet",
+            "--",
+            "--input",
+            tmp.path().to_str().unwrap(),
+            "--output",
+            "out.webm",
+        ])
+        .status()?;
+
+    assert!(!status.success(), "expected failure for empty input folder");
+    Ok(())
+}

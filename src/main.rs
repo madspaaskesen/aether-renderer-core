@@ -60,6 +60,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .count() as u32;
 
+    if frame_count == 0 {
+        return Err(format!("❌ No PNG files found in '{}'.", working_input_path.display()).into());
+    }
+
     let duration = frame_count as f32 / args.fps as f32;
 
     // Build fade filter if requested

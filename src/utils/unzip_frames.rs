@@ -16,6 +16,7 @@ pub fn unzip_frames(zip_path: &Path) -> Result<(PathBuf, tempfile::TempDir), Box
 
     let temp_path = temp_dir.path().to_path_buf();
 
+    let mut extracted = 0u32;
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)
             .map_err(|e| format!("❌ Failed to access file in zip at index {}: {}", i, e))?;
@@ -33,6 +34,11 @@ pub fn unzip_frames(zip_path: &Path) -> Result<(PathBuf, tempfile::TempDir), Box
             .map_err(|e| format!("❌ Failed to copy content to '{}': {}", full_out_path.display(), e))?;
 
         println!("✅ Extracting: {}", full_out_path.display());
+        extracted += 1;
+    }
+
+    if extracted == 0 {
+        return Err("❌ No PNG files found in zip archive".into());
     }
 
     println!("🗂️  Extracted frames to: {}", temp_path.display());
