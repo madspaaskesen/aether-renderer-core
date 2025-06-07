@@ -1,5 +1,8 @@
 # 🌸 aether-renderer-core
 
+✨ Rust CLI to convert PNG/WebP sequences into transparent .webm or .mp4 videos.
+Built for creative layering, visual rituals, and a future GUI.
+
 Convert PNG or WebP frame sequences into transparent `.webm` or `.mp4` videos using Rust + ffmpeg.
 
 ---
@@ -74,3 +77,5 @@ cargo run -- --input ./frames --output my.webm --fps 30 --format webm
 
 🌸 Powered by [Rust Lang](https://www.rust-lang.org/), [Rust getting started](https://www.rust-lang.org/learn/get-started)
 
+Aether Renderer Core is the sacred heart of a lightweight animation rendering toolkit.
+Converts frame sequences to video with love, transparency, and full creative control.
