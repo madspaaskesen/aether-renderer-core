@@ -83,6 +83,25 @@ cargo run -- --input ./my-frames.zip --output my.gif --fps 30 --format gif
 
 ---
 
+## 🧪 Tests
+
+This project contains both unit tests and integration tests. The unit tests live
+next to the code they verify (for example in
+`src/utils/unzip_frames.rs`) while the integration tests reside in
+`tests/integration.rs`.
+
+Run all tests using Cargo:
+
+```bash
+cargo test
+```
+
+The integration suite relies on `ffmpeg` being available on your system. If
+`ffmpeg` is missing, the rendering test is skipped but all other tests still
+run.
+
+---
+
 ## 📦 Example ZIP
 
 You can test the renderer using the provided frame sequence:
