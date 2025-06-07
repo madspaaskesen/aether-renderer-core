@@ -14,6 +14,7 @@ Built with love for artists, developers, and sacred animation workflows.
 - ✅ Supports alpha channel export (via `yuva420p`)
 - ✅ Input PNG/WebP sequences with alpha from folder or .zip file
 - ✅ Export `.webm` with alpha (via `libvpx`)
+- ✅ Export `.gif` with alpha
 - ✅ `.mp4` fallback (no alpha)
 - ✅ CLI flags for FPS, input folder, output path, format
 
@@ -58,6 +59,14 @@ frame_0002.png
 
 Alpha-enabled PNGs are recommended for transparent .webm.
 
+---
+
+Convert to gif file with transparent background:
+
+```bash
+cargo run -- --input ./my-frames.zip --output my.gif --fps 30 --format gif
+```
+
 (Just make sure ffmpeg is installed)
 
 ---
@@ -98,7 +107,7 @@ Here’s one frame from the sacred animation:
 
 ## ✨ Example Animation
 
-![demo](https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/sacred-stars-preview.gif)
+![demo](https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/sacred-stars-preview.gif?v=1)
 
 ▶️ [Watch output video](https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/sacred-stars-preview.webm)
 

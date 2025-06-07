@@ -44,8 +44,53 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("🌿 Rendering {} → {} at {} FPS...", input_str, args.output, args.fps);
 
-    // Build ffmpeg command
+    // Build ffmpeg command (For videoes or GIF)
     let output_format = args.format.as_str();
+
+    if output_format == "gif" {
+        let palette_path = "palette.png";
+
+        // Step 1: Generate palette
+        let palette_status = Command::new("ffmpeg")
+            .args([
+                "-i", input_str,
+                "-vf", "fps=30,scale=640:-1:flags=lanczos,palettegen",
+                "-y", palette_path,
+            ])
+            .status()
+            .expect("⚠️ Failed to generate GIF palette");
+
+        if !palette_status.success() {
+            eprintln!("❌ Failed to generate palette");
+            return Ok(());
+        }
+
+        // Step 2: Generate GIF using palette
+        let gif_status = Command::new("ffmpeg")
+            .args([
+                "-framerate", &args.fps.to_string(),
+                "-i", input_str,
+                "-i", palette_path,
+                "-lavfi", "fps=30,scale=640:-1:flags=lanczos [x]; [x][1:v] paletteuse",
+                "-y",
+                &args.output,
+            ])
+            .status()
+            .expect("⚠️ Failed to generate GIF");
+
+        if gif_status.success() {
+            println!("✅ GIF exported: {}", &args.output);
+        } else {
+            eprintln!("❌ Failed to export GIF");
+        }
+
+        // Remove temperary palette.png file
+        std::fs::remove_file(palette_path)
+            .unwrap_or_else(|e| eprintln!("⚠️ Failed to remove palette file: {}", e));
+
+        return Ok(());
+    }
+
     let codec = match output_format {
         "webm" => "libvpx",
         "mp4" => "libx264",
