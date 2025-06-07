@@ -1,64 +1,86 @@
-# 🌸 aether-renderer-core
+# 🌌 Aether Renderer Core
 
-✨ Rust CLI to convert PNG/WebP sequences into transparent .webm or .mp4 videos.
-Built for creative layering, visual rituals, and a future GUI.
+**Aether Renderer Core** is a lightweight, Rust-based CLI tool that converts image sequences (PNG/WebP) into transparent `.webm` or `.mp4` videos using `ffmpeg`.
 
-Convert PNG or WebP frame sequences into transparent `.webm` or `.mp4` videos using Rust + ffmpeg.
+Built with love for artists, developers, and sacred animation workflows.
 
 ---
 
 ## ✨ Features
 
-- Supports alpha channel export (via `yuva420p`)
-- CLI-based control over:
-  - Frame rate
-  - Format (webm/mp4)
-  - Output path
+- ✅ Supports alpha channel export (via `yuva420p`)
+- ✅ Input PNG/WebP sequences with alpha from folder or .zip file
+- ✅ Export `.webm` with alpha (via `libvpx`)
+- ✅ `.mp4` fallback (no alpha)
+- ✅ CLI flags for FPS, input folder, output path, format
 
 ---
 
-## 🧱 Getting started
-
-Install rust & cargo:
+## 🧪 Usage
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-Read more 👉 [Rust getting started](https://www.rust-lang.org/learn/get-started)
-
-## 🦄 Usage
-
-```bash
-cargo run --release -- \\
-  --input ./frames \\
-  --output sacred-animation.webm \\
-  --fps 30 \\
+cargo run --release -- \
+  --input ./frames \
+  --output my.webm \
+  --fps 30 \
   --format webm
 ```
 
-📂 Input folder should contain frames like:
-frame_0000.png, frame_0001.png, ...
+📂 Your input folder should contain files like:
+
+```
+frame_0000.png
+frame_0001.png
+frame_0002.png
+...
+```
+
+---
+
+You can now also pass a .zip file containing frames:
+
+```bash
+cargo run -- --input ./my-frames.zip --output my.webm --fps 30 --format webm
+```
+
+
+📂 Your input folder or ZIP file must contain images named like:
+
+```
+frame_0000.png
+frame_0001.png
+frame_0002.png
+...
+```
+
+Alpha-enabled PNGs are recommended for transparent .webm.
+
+(Just make sure ffmpeg is installed)
+
+---
+
+## 🧰 Requirements
+
+- Rust & Cargo installed: https://rustup.rs
+- `ffmpeg` must be installed and accessible in your system path
 
 ---
 
 ## 🔮 Roadmap
 
-- Add fade-in/fade-out control
-- Add audio syncing
-- Add Tauri-based GUI (coming soon: aether-renderer)
-
-Licensed under MIT — by Siria
+- [x] Render `.png` → `.webm` (with alpha)
+- [ ] Support `.mp4` export
+- [ ] Add bitrate / CRF quality control
+- [ ] `--fade-in`, `--fade-out` for soft loops
+- [ ] Handle errors & missing frames gracefully
+- [ ] Add optional CLI preview
+- [ ] Begin GUI version with Tauri (`aether-renderer`) 🌟
 
 ---
 
-### 🧪 Next Step: Try It!
+## 🌿 License
 
-```bash
-cargo run -- --input ./frames --output my.webm --fps 30 --format webm
-```
-
-(Just make sure ffmpeg is installed)
+MIT — created with sacred care by [@madspaaskesen](https://github.com/madspaaskesen)
 
 ---
 

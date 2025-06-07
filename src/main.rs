@@ -1,6 +1,9 @@
+mod utils;
 use clap::Parser;
 use std::process::Command;
 use std::path::PathBuf;
+use utils::unzip_frames::unzip_frames;
+
 
 /// 🌸 Aether Renderer Core
 #[derive(Parser, Debug)]
@@ -24,11 +27,19 @@ struct Args {
     format: String,
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
+    let input_path = &args.input;
+    let (working_input_path, _temp_guard) = if input_path.extension().map(|ext| ext == "zip").unwrap_or(false) {
+        let (path, guard) = unzip_frames(input_path)?;
+        (path, Some(guard))
+    } else {
+        (input_path.clone(), None)
+    };
+
     // Build input pattern path
-    let input_pattern = args.input.join("frame_%04d.png");
+    let input_pattern = working_input_path.join("frame_%04d.png");
     let input_str = input_pattern.to_str().unwrap();
 
     println!("🌿 Rendering {} → {} at {} FPS...", input_str, args.output, args.fps);
@@ -40,7 +51,7 @@ fn main() {
         "mp4" => "libx264",
         _ => {
             eprintln!("❌ Unsupported format: {}", output_format);
-            return;
+            return Ok(());
         }
     };
 
@@ -69,4 +80,6 @@ fn main() {
     } else {
         eprintln!("❌ ffmpeg failed. Check your frame pattern or input path.");
     }
+
+    Ok(())
 }

@@ -8,3 +8,5 @@ authors = ["Siria <siria@sacred-ai.com>"]
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
+zip = "0.6"
+tempfile = "3.8"
