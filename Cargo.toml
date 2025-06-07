@@ -1,6 +1,6 @@
 [package]
 name = "aether-renderer-core"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "A sacred Rust-based CLI for rendering transparent WebM/MP4/GIF from PNG sequences"
 license = "MIT"
@@ -13,3 +13,10 @@ readme = "README.md"
 clap = { version = "4.5", features = ["derive"] }
 zip = "0.6"
 tempfile = "3.8"
+
+include = [
+    "src/**",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE"
+]
