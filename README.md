@@ -73,7 +73,7 @@ Alpha-enabled PNGs are recommended for transparent .webm.
 
 You can test the renderer using the provided frame sequence:
 
-[examples/sacred-stars.zip](examples/sacred-stars.zip)
+[sacred-stars.zip](https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/sacred-stars.zip)
 
 Run it like this:
 
@@ -87,17 +87,20 @@ This will generate a loopable .webm video with alpha.
 
 ## ✨ Example Output
 
+See full demo here (just started):
+![Webpage demo](https://sacred-ai.com/about/aetherrenderer)
+
 Here’s one frame from the sacred animation:
 
-<img src="examples/sacred-stars-preview.png?v=2" width="480" alt="Frame example">
+<img src="https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/sacred-stars-preview.png" width="480" alt="Frame example">
 
 ---
 
 ## ✨ Example Animation
 
-![demo](examples/sacred-stars-demo.gif)
+![demo](https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/sacred-stars-preview.gif)
 
-▶️ [Watch output video](https://github.com/madspaaskesen/aether-renderer-core/raw/refs/heads/main/examples/sacred-stars-demo.webm)
+▶️ [Watch output video](https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/sacred-stars-preview.webm)
 
 ---
 
