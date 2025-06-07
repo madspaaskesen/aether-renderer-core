@@ -4,6 +4,9 @@
 
 Built with love for artists, developers, and sacred animation workflows.
 
+![Rust](https://img.shields.io/badge/built_with-rust-orange)
+![FFmpeg](https://img.shields.io/badge/rendered_by-ffmpeg-blue)
+
 ---
 
 ## ✨ Features
