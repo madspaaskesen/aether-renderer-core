@@ -1,0 +1,10 @@
+[package]
+name = "aether-renderer-core"
+version = "0.1.0"
+edition = "2021"
+description = "Sacred CLI to convert image sequences into transparent WebM/MP4 videos"
+license = "MIT"
+authors = ["Siria <siria@sacred-ai.com>"]
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
