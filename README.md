@@ -16,7 +16,8 @@ Built with love for artists, developers, and sacred animation workflows.
 - ✅ Export `.webm` with alpha (via `libvpx`)
 - ✅ Export `.gif` with alpha
 - ✅ `.mp4` fallback (no alpha)
-- ✅ CLI flags for FPS, input folder, output path, format
+ - ✅ CLI flags for FPS, input folder, output path, format
+ - ✅ Optional `--fade-in` and `--fade-out` for smooth loops
 
 ---
 
@@ -27,8 +28,12 @@ cargo run --release -- \
   --input ./frames \
   --output my.webm \
   --fps 30 \
-  --format webm
+  --format webm \
+  --fade-in 1 \
+  --fade-out 1
 ```
+
+The `--fade-in` and `--fade-out` flags apply ffmpeg's [`fade`](https://ffmpeg.org/ffmpeg-filters.html#fade) filter under the hood. The start of the fade out is automatically calculated from the frame count and FPS.
 
 📂 Your input folder should contain files like:
 
@@ -118,7 +123,7 @@ Here’s one frame from the sacred animation:
 - [x] Render `.png` → `.webm` (with alpha)
 - [ ] Support `.mp4` export
 - [ ] Add bitrate / CRF quality control
-- [ ] `--fade-in`, `--fade-out` for soft loops
+- [x] `--fade-in`, `--fade-out` for soft loops
 - [ ] Handle errors & missing frames gracefully
 - [ ] Add optional CLI preview
 - [ ] Begin GUI version with Tauri (`aether-renderer`) 🌟

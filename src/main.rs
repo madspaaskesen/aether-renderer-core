@@ -1,7 +1,8 @@
 mod utils;
 use clap::Parser;
-use std::process::Command;
+use std::fs;
 use std::path::PathBuf;
+use std::process::Command;
 use utils::unzip_frames::unzip_frames;
 
 
@@ -25,6 +26,14 @@ struct Args {
     /// Output format: webm or mp4
     #[arg(short = 't', long, default_value = "webm")]
     format: String,
+
+    /// Fade in duration in seconds
+    #[arg(long, default_value_t = 0.0)]
+    fade_in: f32,
+
+    /// Fade out duration in seconds
+    #[arg(long, default_value_t = 0.0)]
+    fade_out: f32,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,6 +50,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Build input pattern path
     let input_pattern = working_input_path.join("frame_%04d.png");
     let input_str = input_pattern.to_str().unwrap();
+
+    // Count frames to determine duration for fade-out
+    let frame_count = fs::read_dir(&working_input_path)?
+        .filter_map(|e| e.ok())
+        .filter(|e| match e.path().extension().and_then(|s| s.to_str()) {
+            Some("png") | Some("webp") => true,
+            _ => false,
+        })
+        .count() as u32;
+
+    let duration = frame_count as f32 / args.fps as f32;
+
+    // Build fade filter if requested
+    let mut fade_filter = String::new();
+    if args.fade_in > 0.0 {
+        fade_filter.push_str(&format!("fade=t=in:st=0:d={}", args.fade_in));
+    }
+    if args.fade_out > 0.0 {
+        if !fade_filter.is_empty() {
+            fade_filter.push(',');
+        }
+        let start = (duration - args.fade_out).max(0.0);
+        fade_filter.push_str(&format!("fade=t=out:st={}:d={}", start, args.fade_out));
+    }
 
     println!("🌿 Rendering {} → {} at {} FPS...", input_str, args.output, args.fps);
 
@@ -76,12 +109,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         // Step 2: Generate GIF using palette
+        let mut gif_filter = String::from("fps=30,scale=640:-1:flags=lanczos");
+        if !fade_filter.is_empty() {
+            gif_filter.push(',');
+            gif_filter.push_str(&fade_filter);
+        }
         let gif_status = match Command::new("ffmpeg")
             .args([
                 "-framerate", &args.fps.to_string(),
                 "-i", input_str,
                 "-i", palette_path,
-                "-lavfi", "fps=30,scale=640:-1:flags=lanczos [x]; [x][1:v] paletteuse",
+                "-lavfi",
+                &format!("{} [x]; [x][1:v] paletteuse", gif_filter),
                 "-y",
                 &args.output,
             ])
@@ -126,16 +165,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "yuv420p" // no alpha in mp4
     };
 
+    let mut ffmpeg_args = vec![
+        "-framerate".to_string(),
+        args.fps.to_string(),
+        "-i".to_string(),
+        input_str.to_string(),
+        "-c:v".to_string(),
+        codec.to_string(),
+        "-pix_fmt".to_string(),
+        pix_fmt.to_string(),
+        "-auto-alt-ref".to_string(),
+        "0".to_string(),
+    ];
+
+    if !fade_filter.is_empty() {
+        ffmpeg_args.push("-vf".to_string());
+        ffmpeg_args.push(fade_filter.clone());
+    }
+
+    ffmpeg_args.push("-y".to_string());
+    ffmpeg_args.push(args.output.clone());
+
     let status = match Command::new("ffmpeg")
-        .args([
-            "-framerate", &args.fps.to_string(),
-            "-i", input_str,
-            "-c:v", codec,
-            "-pix_fmt", pix_fmt,
-            "-auto-alt-ref", "0", // ← required for alpha with libvpx
-            "-y",
-            &args.output,
-        ])
+        .args(ffmpeg_args)
 
         .status()
     {
