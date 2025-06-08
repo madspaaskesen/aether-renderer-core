@@ -4,7 +4,7 @@
 [![Downloads](https://img.shields.io/crates/d/aether-renderer-core.svg)](https://crates.io/crates/aether-renderer-core)
 [![License](https://img.shields.io/crates/l/aether-renderer-core.svg)](https://crates.io/crates/aether-renderer-core)
 
-**Aether Renderer Core** is a lightweight, Rust-based CLI tool that converts image sequences (PNG/WebP) into transparent `.webm` or `.mp4` videos using `ffmpeg`.
+**Aether Renderer Core** is a lightweight, Rust-based and a sacred CLI tool to render transparent `.webm`, `.mp4`, and `.gif` from image sequences with alpha channel support, loop softening, and ffmpeg power.
 
 Built with love for artists, developers, and sacred animation workflows.
 
