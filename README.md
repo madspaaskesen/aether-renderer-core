@@ -1,4 +1,4 @@
-# 🌌 Aether Renderer Core
+# Aether Renderer Core
 
 **Aether Renderer Core** is a lightweight, Rust-based CLI tool that converts image sequences (PNG/WebP) into transparent `.webm` or `.mp4` videos using `ffmpeg`.
 
@@ -73,6 +73,12 @@ cargo run -- --input ./my-frames.zip --output my.gif --fps 30 --format gif
 ```
 
 (Just make sure ffmpeg is installed)
+
+---
+
+## 📦 Download prebuilt binaries
+
+🛠️ Download prebuilt binaries from the [Releases](https://github.com/madspaaskesen/aether-renderer-core/releases) page.
 
 ---
 
