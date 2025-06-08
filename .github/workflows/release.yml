@@ -5,8 +5,8 @@ on:
     types: [published]
 
 permissions:
-  contents: write
-  
+  contents: write  # Required for uploading release assets
+
 jobs:
   build:
     name: Build binaries
@@ -25,7 +25,7 @@ jobs:
             ext: ".exe"
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Rust
