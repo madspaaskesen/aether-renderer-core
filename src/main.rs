@@ -39,6 +39,25 @@ struct Args {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
+    // Check for ffmpeg availability upfront
+    match Command::new("ffmpeg").arg("-version").status() {
+        Ok(s) if s.success() => {}
+        Ok(_) => {
+            return Err("❌ ffmpeg failed to run correctly.".into());
+        }
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                return Err("❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.".into());
+            } else {
+                return Err(format!("❌ Failed to execute ffmpeg: {}", e).into());
+            }
+        }
+    }
+
+    if !args.input.exists() {
+        return Err(format!("❌ Input path '{}' does not exist.", args.input.display()).into());
+    }
+
     let input_path = &args.input;
     let (working_input_path, _temp_guard) = if input_path.extension().map(|ext| ext == "zip").unwrap_or(false) {
         let (path, guard) = unzip_frames(input_path)?;
