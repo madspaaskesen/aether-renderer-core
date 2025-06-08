@@ -9,7 +9,7 @@ use utils::unzip_frames::unzip_frames;
 /// 🌸 Aether Renderer Core
 #[derive(Parser, Debug)]
 #[command(name = "aether-renderer")]
-#[command(about = "Convert PNG frame sequences to WebM/MP4 with alpha", long_about = None)]
+#[command(about = "Convert PNG frame sequences to WebM (alpha) or MP4", long_about = None)]
 struct Args {
     /// Folder containing input PNG files
     #[arg(short, long)]
@@ -158,15 +158,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "webm" => "libvpx",
         "mp4" => "libx264",
         _ => {
-            eprintln!("❌ Unsupported format: {}", output_format);
+            eprintln!("❌ Unsupported format: {}. Use 'webm', 'mp4' or 'gif'.", output_format);
             return Ok(());
         }
     };
 
-    let pix_fmt = if output_format == "webm" {
-        "yuva420p" // supports alpha
-    } else {
-        "yuv420p" // no alpha in mp4
+    let pix_fmt = match output_format {
+        "webm" => "yuva420p", // supports alpha
+        "mp4" => "yuv420p",   // no alpha
+        _ => unreachable!(),
     };
 
     let mut ffmpeg_args = vec![

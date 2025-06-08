@@ -66,6 +66,43 @@ fn cli_renders_webm() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+fn cli_renders_mp4() -> Result<(), Box<dyn std::error::Error>> {
+    if Command::new("ffmpeg").arg("-version").output().is_err() {
+        eprintln!("skipping cli_renders_mp4 - ffmpeg not installed");
+        return Ok(());
+    }
+    let zip_path = Path::new("tests/testdata/two-frames.zip");
+    assert!(zip_path.exists(), "test zip not found: {}", zip_path.display());
+
+    let tmp = tempdir()?;
+    unzip_to_dir(zip_path, tmp.path())?;
+
+    let out_file = tmp.path().join("out.mp4");
+
+    let status = Command::new("cargo")
+        .args([
+            "run",
+            "--quiet",
+            "--",
+            "--input",
+            tmp.path().to_str().unwrap(),
+            "--output",
+            out_file.to_str().unwrap(),
+            "--fps",
+            "30",
+            "--format",
+            "mp4",
+        ])
+        .status()?;
+
+    assert!(status.success(), "cargo run failed");
+    assert!(out_file.exists(), "output file was not created");
+    let meta = fs::metadata(&out_file)?;
+    assert!(meta.len() > 0, "output file is empty");
+    Ok(())
+}
+
+#[test]
 fn cli_errors_on_invalid_zip() -> Result<(), Box<dyn std::error::Error>> {
     let zip_path = Path::new("tests/testdata/two-frames-error.zip");
     assert!(zip_path.exists(), "test zip not found: {}", zip_path.display());
