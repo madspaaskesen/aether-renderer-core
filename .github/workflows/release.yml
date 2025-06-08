@@ -44,10 +44,12 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Rename binary
+        shell: bash
         run: |
           mkdir -p dist
           cp target/${{ matrix.target }}/release/aether-renderer-core${{ matrix.ext }} \
             dist/aether-renderer-core-${{ github.ref_name }}-${{ matrix.name }}${{ matrix.ext }}
+
 
       - name: Upload release asset
         uses: softprops/action-gh-release@v1
