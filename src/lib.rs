@@ -26,8 +26,12 @@ pub struct RenderConfig {
     pub preview: bool,
 }
 
-fn default_fps() -> u32 { 30 }
-fn default_format() -> String { "webm".into() }
+fn default_fps() -> u32 {
+    30
+}
+fn default_format() -> String {
+    "webm".into()
+}
 
 pub fn render_from_config(config_path: &str) -> Result<(), String> {
     let config_str = fs::read_to_string(config_path)
@@ -44,7 +48,8 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
                 return Err(
-                    "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.".into(),
+                    "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
+                        .into(),
                 );
             } else {
                 return Err(format!("❌ Failed to execute ffmpeg: {}", e));
@@ -53,7 +58,10 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
     }
 
     if !args.input.exists() {
-        return Err(format!("❌ Input path '{}' does not exist.", args.input.display()));
+        return Err(format!(
+            "❌ Input path '{}' does not exist.",
+            args.input.display()
+        ));
     }
 
     let input_path = &args.input;
@@ -62,8 +70,7 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
         .map(|ext| ext == "zip")
         .unwrap_or(false)
     {
-        let (path, guard) = unzip_frames(input_path)
-            .map_err(|e| e.to_string())?;
+        let (path, guard) = unzip_frames(input_path).map_err(|e| e.to_string())?;
         (path, Some(guard))
     } else {
         (input_path.clone(), None)
@@ -126,7 +133,9 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
             Ok(s) => s,
             Err(e) => {
                 if e.kind() == std::io::ErrorKind::NotFound {
-                    eprintln!("❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.");
+                    eprintln!(
+                        "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
+                    );
                 } else {
                     eprintln!("❌ Failed to execute ffmpeg: {}", e);
                 }
@@ -162,7 +171,9 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
             Ok(s) => s,
             Err(e) => {
                 if e.kind() == std::io::ErrorKind::NotFound {
-                    eprintln!("❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.");
+                    eprintln!(
+                        "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
+                    );
                 } else {
                     eprintln!("❌ Failed to execute ffmpeg: {}", e);
                 }
@@ -191,7 +202,10 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
         "webm" => "libvpx",
         "mp4" => "libx264",
         _ => {
-            eprintln!("❌ Unsupported format: {}. Use 'webm', 'mp4' or 'gif'.", output_format);
+            eprintln!(
+                "❌ Unsupported format: {}. Use 'webm', 'mp4' or 'gif'.",
+                output_format
+            );
             return Ok(());
         }
     };
@@ -237,7 +251,9 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
         Ok(s) => s,
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
-                eprintln!("❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.");
+                eprintln!(
+                    "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
+                );
             } else {
                 eprintln!("❌ Failed to execute ffmpeg: {}", e);
             }
@@ -276,4 +292,3 @@ fn open_output(path: &str) -> std::io::Result<()> {
             .map(|_| ())
     }
 }
-

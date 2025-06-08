@@ -55,7 +55,13 @@ fn cli_renders_webm() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     let status = Command::new("cargo")
-        .args(["run", "--quiet", "--", "--config", config_path.to_str().unwrap()])
+        .args([
+            "run",
+            "--quiet",
+            "--",
+            "--config",
+            config_path.to_str().unwrap(),
+        ])
         .status()?;
 
     assert!(status.success(), "cargo run failed");
@@ -93,7 +99,13 @@ fn cli_renders_mp4() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     let status = Command::new("cargo")
-        .args(["run", "--quiet", "--", "--config", config_path.to_str().unwrap()])
+        .args([
+            "run",
+            "--quiet",
+            "--",
+            "--config",
+            config_path.to_str().unwrap(),
+        ])
         .status()?;
 
     assert!(status.success(), "cargo run failed");
@@ -122,7 +134,13 @@ fn cli_errors_on_invalid_zip() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     let status = Command::new("cargo")
-        .args(["run", "--quiet", "--", "--config", config_path.to_str().unwrap()])
+        .args([
+            "run",
+            "--quiet",
+            "--",
+            "--config",
+            config_path.to_str().unwrap(),
+        ])
         .status()?;
 
     assert!(!status.success(), "expected failure for invalid zip input");
@@ -144,7 +162,13 @@ fn cli_errors_on_missing_folder() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     let status = Command::new("cargo")
-        .args(["run", "--quiet", "--", "--config", config_path.to_str().unwrap()])
+        .args([
+            "run",
+            "--quiet",
+            "--",
+            "--config",
+            config_path.to_str().unwrap(),
+        ])
         .status()?;
 
     assert!(
@@ -166,7 +190,13 @@ fn cli_errors_on_empty_folder() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     let status = Command::new("cargo")
-        .args(["run", "--quiet", "--", "--config", config_path.to_str().unwrap()])
+        .args([
+            "run",
+            "--quiet",
+            "--",
+            "--config",
+            config_path.to_str().unwrap(),
+        ])
         .status()?;
 
     assert!(!status.success(), "expected failure for empty input folder");

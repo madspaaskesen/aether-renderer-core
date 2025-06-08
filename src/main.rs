@@ -13,7 +13,5 @@ struct Args {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
-    aether_renderer_core::render_from_config(args.config.to_str().unwrap())
-        .map_err(|e| e.into())
+    aether_renderer_core::render_from_config(args.config.to_str().unwrap()).map_err(|e| e.into())
 }
-
