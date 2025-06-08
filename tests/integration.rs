@@ -1,5 +1,6 @@
 use std::fs;
 use std::fs::File;
+use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 use tempfile::tempdir;
@@ -44,21 +45,17 @@ fn cli_renders_webm() -> Result<(), Box<dyn std::error::Error>> {
     unzip_to_dir(zip_path, tmp.path())?;
 
     let out_file = tmp.path().join("out.webm");
+    let config_path = tmp.path().join("config.json");
+    let mut f = File::create(&config_path)?;
+    writeln!(
+        f,
+        "{{\"input\":\"{}\",\"output\":\"{}\",\"fps\":30,\"format\":\"webm\"}}",
+        tmp.path().display(),
+        out_file.to_str().unwrap()
+    )?;
 
     let status = Command::new("cargo")
-        .args([
-            "run",
-            "--quiet",
-            "--",
-            "--input",
-            tmp.path().to_str().unwrap(),
-            "--output",
-            out_file.to_str().unwrap(),
-            "--fps",
-            "30",
-            "--format",
-            "webm",
-        ])
+        .args(["run", "--quiet", "--", "--config", config_path.to_str().unwrap()])
         .status()?;
 
     assert!(status.success(), "cargo run failed");
@@ -86,21 +83,17 @@ fn cli_renders_mp4() -> Result<(), Box<dyn std::error::Error>> {
     unzip_to_dir(zip_path, tmp.path())?;
 
     let out_file = tmp.path().join("out.mp4");
+    let config_path = tmp.path().join("config.json");
+    let mut f = File::create(&config_path)?;
+    writeln!(
+        f,
+        "{{\"input\":\"{}\",\"output\":\"{}\",\"fps\":30,\"format\":\"mp4\"}}",
+        tmp.path().display(),
+        out_file.to_str().unwrap()
+    )?;
 
     let status = Command::new("cargo")
-        .args([
-            "run",
-            "--quiet",
-            "--",
-            "--input",
-            tmp.path().to_str().unwrap(),
-            "--output",
-            out_file.to_str().unwrap(),
-            "--fps",
-            "30",
-            "--format",
-            "mp4",
-        ])
+        .args(["run", "--quiet", "--", "--config", config_path.to_str().unwrap()])
         .status()?;
 
     assert!(status.success(), "cargo run failed");
@@ -119,16 +112,17 @@ fn cli_errors_on_invalid_zip() -> Result<(), Box<dyn std::error::Error>> {
         zip_path.display()
     );
 
+    let tmp_dir = tempdir()?;
+    let config_path = tmp_dir.path().join("config.json");
+    let mut f = File::create(&config_path)?;
+    writeln!(
+        f,
+        "{{\"input\":\"{}\",\"output\":\"out.webm\",\"fps\":30,\"format\":\"webm\"}}",
+        zip_path.display()
+    )?;
+
     let status = Command::new("cargo")
-        .args([
-            "run",
-            "--quiet",
-            "--",
-            "--input",
-            zip_path.to_str().unwrap(),
-            "--output",
-            "out.webm",
-        ])
+        .args(["run", "--quiet", "--", "--config", config_path.to_str().unwrap()])
         .status()?;
 
     assert!(!status.success(), "expected failure for invalid zip input");
@@ -140,16 +134,17 @@ fn cli_errors_on_missing_folder() -> Result<(), Box<dyn std::error::Error>> {
     let missing = Path::new("tests/testdata/does_not_exist");
     assert!(!missing.exists());
 
+    let tmp = tempdir()?;
+    let config_path = tmp.path().join("config.json");
+    let mut f = File::create(&config_path)?;
+    writeln!(
+        f,
+        "{{\"input\":\"{}\",\"output\":\"out.webm\"}}",
+        missing.display()
+    )?;
+
     let status = Command::new("cargo")
-        .args([
-            "run",
-            "--quiet",
-            "--",
-            "--input",
-            missing.to_str().unwrap(),
-            "--output",
-            "out.webm",
-        ])
+        .args(["run", "--quiet", "--", "--config", config_path.to_str().unwrap()])
         .status()?;
 
     assert!(
@@ -162,17 +157,16 @@ fn cli_errors_on_missing_folder() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn cli_errors_on_empty_folder() -> Result<(), Box<dyn std::error::Error>> {
     let tmp = tempdir()?;
+    let config_path = tmp.path().join("config.json");
+    let mut f = File::create(&config_path)?;
+    writeln!(
+        f,
+        "{{\"input\":\"{}\",\"output\":\"out.webm\"}}",
+        tmp.path().display()
+    )?;
 
     let status = Command::new("cargo")
-        .args([
-            "run",
-            "--quiet",
-            "--",
-            "--input",
-            tmp.path().to_str().unwrap(),
-            "--output",
-            "out.webm",
-        ])
+        .args(["run", "--quiet", "--", "--config", config_path.to_str().unwrap()])
         .status()?;
 
     assert!(!status.success(), "expected failure for empty input folder");
