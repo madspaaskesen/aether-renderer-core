@@ -18,6 +18,7 @@ Built with love for artists, developers, and sacred animation workflows.
 - ✅ `.mp4` fallback (no alpha)
 - ✅ CLI flags for FPS, input folder, output path, format
 - ✅ Optional `--fade-in` and `--fade-out` for smooth loops
+- ✅ Optional `--bitrate` and `--crf` for quality control
 - ✅ Handle errors & missing frames gracefully
 
 ---
@@ -31,7 +32,9 @@ cargo run --release -- \
   --fps 30 \
   --format webm \
   --fade-in 1 \
-  --fade-out 1
+  --fade-out 1 \
+  --bitrate 2M \
+  --crf 23
 ```
 
 The `--fade-in` and `--fade-out` flags apply ffmpeg's [`fade`](https://ffmpeg.org/ffmpeg-filters.html#fade) filter under the hood. The start of the fade out is automatically calculated from the frame count and FPS.
@@ -150,7 +153,7 @@ Here’s one frame from the sacred animation:
 
 - [x] Render `.png` → `.webm` (with alpha)
 - [x] Support `.mp4` export
-- [ ] Add bitrate / CRF quality control
+- [x] Add bitrate / CRF quality control
 - [x] `--fade-in`, `--fade-out` for soft loops
 - [x] Handle errors & missing frames gracefully
 - [ ] Add optional CLI preview
