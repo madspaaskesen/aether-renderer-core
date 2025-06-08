@@ -4,21 +4,23 @@ use tempfile::tempdir;
 use zip::ZipArchive;
 
 /// Extracts frame_*.png from a ZIP into a temp folder, returns the folder path
-pub fn unzip_frames(zip_path: &Path) -> Result<(PathBuf, tempfile::TempDir), Box<dyn std::error::Error>> {
+pub fn unzip_frames(
+    zip_path: &Path,
+) -> Result<(PathBuf, tempfile::TempDir), Box<dyn std::error::Error>> {
     let file = File::open(zip_path)
         .map_err(|e| format!("❌ Failed to open zip file '{}': {}", zip_path.display(), e))?;
 
-    let mut archive = ZipArchive::new(file)
-        .map_err(|e| format!("❌ Failed to read zip archive: {}", e))?;
+    let mut archive =
+        ZipArchive::new(file).map_err(|e| format!("❌ Failed to read zip archive: {}", e))?;
 
-    let temp_dir = tempdir()
-        .map_err(|e| format!("❌ Failed to create temp dir: {}", e))?;
+    let temp_dir = tempdir().map_err(|e| format!("❌ Failed to create temp dir: {}", e))?;
 
     let temp_path = temp_dir.path().to_path_buf();
 
     let mut extracted = 0u32;
     for i in 0..archive.len() {
-        let mut file = archive.by_index(i)
+        let mut file = archive
+            .by_index(i)
             .map_err(|e| format!("❌ Failed to access file in zip at index {}: {}", i, e))?;
 
         let filename = file.name().rsplit('/').next().unwrap_or("");
@@ -27,11 +29,21 @@ pub fn unzip_frames(zip_path: &Path) -> Result<(PathBuf, tempfile::TempDir), Box
         }
 
         let full_out_path = temp_path.join(filename);
-        let mut out_file = File::create(&full_out_path)
-            .map_err(|e| format!("❌ Failed to create output file '{}': {}", full_out_path.display(), e))?;
+        let mut out_file = File::create(&full_out_path).map_err(|e| {
+            format!(
+                "❌ Failed to create output file '{}': {}",
+                full_out_path.display(),
+                e
+            )
+        })?;
 
-        std::io::copy(&mut file, &mut out_file)
-            .map_err(|e| format!("❌ Failed to copy content to '{}': {}", full_out_path.display(), e))?;
+        std::io::copy(&mut file, &mut out_file).map_err(|e| {
+            format!(
+                "❌ Failed to copy content to '{}': {}",
+                full_out_path.display(),
+                e
+            )
+        })?;
 
         println!("✅ Extracting: {}", full_out_path.display());
         extracted += 1;
@@ -48,12 +60,12 @@ pub fn unzip_frames(zip_path: &Path) -> Result<(PathBuf, tempfile::TempDir), Box
 #[cfg(test)]
 mod tests {
     use super::unzip_frames;
+    use std::fs::File;
     use std::io::Write;
+    use std::path::Path;
     use tempfile::tempdir;
     use zip::write::{FileOptions, ZipWriter};
     use zip::CompressionMethod;
-    use std::fs::File;
-    use std::path::Path;
 
     // Helper to create a small zip containing two fake PNG files
     fn create_test_zip(path: &Path) -> zip::result::ZipResult<()> {

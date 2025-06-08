@@ -5,7 +5,6 @@ use std::path::PathBuf;
 use std::process::Command;
 use utils::unzip_frames::unzip_frames;
 
-
 /// 🌸 Aether Renderer Core
 #[derive(Parser, Debug)]
 #[command(name = "aether-renderer")]
@@ -59,7 +58,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
-                return Err("❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.".into());
+                return Err(
+                    "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
+                        .into(),
+                );
             } else {
                 return Err(format!("❌ Failed to execute ffmpeg: {}", e).into());
             }
@@ -71,7 +73,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let input_path = &args.input;
-    let (working_input_path, _temp_guard) = if input_path.extension().map(|ext| ext == "zip").unwrap_or(false) {
+    let (working_input_path, _temp_guard) = if input_path
+        .extension()
+        .map(|ext| ext == "zip")
+        .unwrap_or(false)
+    {
         let (path, guard) = unzip_frames(input_path)?;
         (path, Some(guard))
     } else {
@@ -92,7 +98,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .count() as u32;
 
     if frame_count == 0 {
-        return Err(format!("❌ No PNG files found in '{}'.", working_input_path.display()).into());
+        return Err(format!(
+            "❌ No PNG files found in '{}'.",
+            working_input_path.display()
+        )
+        .into());
     }
 
     let duration = frame_count as f32 / args.fps as f32;
@@ -110,7 +120,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         fade_filter.push_str(&format!("fade=t=out:st={}:d={}", start, args.fade_out));
     }
 
-    println!("🌿 Rendering {} → {} at {} FPS...", input_str, args.output, args.fps);
+    println!(
+        "🌿 Rendering {} → {} at {} FPS...",
+        input_str, args.output, args.fps
+    );
 
     // Build ffmpeg command (For videoes or GIF)
     let output_format = args.format.as_str();
@@ -121,16 +134,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Step 1: Generate palette
         let palette_status = match Command::new("ffmpeg")
             .args([
-                "-i", input_str,
-                "-vf", "fps=30,scale=640:-1:flags=lanczos,palettegen",
-                "-y", palette_path,
+                "-i",
+                input_str,
+                "-vf",
+                "fps=30,scale=640:-1:flags=lanczos,palettegen",
+                "-y",
+                palette_path,
             ])
             .status()
         {
             Ok(s) => s,
             Err(e) => {
                 if e.kind() == std::io::ErrorKind::NotFound {
-                    eprintln!("❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.");
+                    eprintln!(
+                        "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
+                    );
                 } else {
                     eprintln!("❌ Failed to execute ffmpeg: {}", e);
                 }
@@ -151,9 +169,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         let gif_status = match Command::new("ffmpeg")
             .args([
-                "-framerate", &args.fps.to_string(),
-                "-i", input_str,
-                "-i", palette_path,
+                "-framerate",
+                &args.fps.to_string(),
+                "-i",
+                input_str,
+                "-i",
+                palette_path,
                 "-lavfi",
                 &format!("{} [x]; [x][1:v] paletteuse", gif_filter),
                 "-y",
@@ -164,7 +185,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(s) => s,
             Err(e) => {
                 if e.kind() == std::io::ErrorKind::NotFound {
-                    eprintln!("❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.");
+                    eprintln!(
+                        "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
+                    );
                 } else {
                     eprintln!("❌ Failed to execute ffmpeg: {}", e);
                 }
@@ -194,7 +217,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "webm" => "libvpx",
         "mp4" => "libx264",
         _ => {
-            eprintln!("❌ Unsupported format: {}. Use 'webm', 'mp4' or 'gif'.", output_format);
+            eprintln!(
+                "❌ Unsupported format: {}. Use 'webm', 'mp4' or 'gif'.",
+                output_format
+            );
             return Ok(());
         }
     };
@@ -236,15 +262,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ffmpeg_args.push("-y".to_string());
     ffmpeg_args.push(args.output.clone());
 
-    let status = match Command::new("ffmpeg")
-        .args(ffmpeg_args)
-
-        .status()
-    {
+    let status = match Command::new("ffmpeg").args(ffmpeg_args).status() {
         Ok(s) => s,
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
-                eprintln!("❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.");
+                eprintln!(
+                    "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
+                );
             } else {
                 eprintln!("❌ Failed to execute ffmpeg: {}", e);
             }
@@ -277,6 +301,9 @@ fn open_output(path: &str) -> std::io::Result<()> {
     }
     #[cfg(target_os = "windows")]
     {
-        Command::new("cmd").args(["/C", "start", path]).status().map(|_| ())
+        Command::new("cmd")
+            .args(["/C", "start", path])
+            .status()
+            .map(|_| ())
     }
 }
