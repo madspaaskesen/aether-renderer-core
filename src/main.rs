@@ -42,6 +42,10 @@ struct Args {
     /// Constant rate factor quality
     #[arg(long, value_name = "CRF")]
     crf: Option<u32>,
+
+    /// Preview the rendered video after export
+    #[arg(long)]
+    preview: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -170,6 +174,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         if gif_status.success() {
             println!("✅ GIF exported: {}", &args.output);
+            if args.preview {
+                if let Err(e) = open_output(&args.output) {
+                    eprintln!("⚠️ Failed to open video preview: {}", e);
+                }
+            }
         } else {
             eprintln!("❌ Failed to export GIF");
         }
@@ -245,9 +254,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if status.success() {
         println!("✅ Video exported: {}", args.output);
+        if args.preview {
+            if let Err(e) = open_output(&args.output) {
+                eprintln!("⚠️ Failed to open video preview: {}", e);
+            }
+        }
     } else {
         eprintln!("❌ ffmpeg failed. Check your frame pattern or input path.");
     }
 
     Ok(())
+}
+
+fn open_output(path: &str) -> std::io::Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open").arg(path).status().map(|_| ())
+    }
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open").arg(path).status().map(|_| ())
+    }
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("cmd").args(["/C", "start", path]).status().map(|_| ())
+    }
 }
