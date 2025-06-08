@@ -146,7 +146,7 @@ Here’s one frame from the sacred animation:
 ## 🔮 Roadmap
 
 - [x] Render `.png` → `.webm` (with alpha)
-- [ ] Support `.mp4` export
+ - [x] Support `.mp4` export
 - [ ] Add bitrate / CRF quality control
 - [x] `--fade-in`, `--fade-out` for soft loops
 - [ ] Handle errors & missing frames gracefully
