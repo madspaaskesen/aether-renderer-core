@@ -34,6 +34,14 @@ struct Args {
     /// Fade out duration in seconds
     #[arg(long, default_value_t = 0.0)]
     fade_out: f32,
+
+    /// Video bitrate (e.g. "2M")
+    #[arg(long, value_name = "BITRATE")]
+    bitrate: Option<String>,
+
+    /// Constant rate factor quality
+    #[arg(long, value_name = "CRF")]
+    crf: Option<u32>,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -200,6 +208,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "-auto-alt-ref".to_string(),
         "0".to_string(),
     ];
+
+    if let Some(ref bitrate) = args.bitrate {
+        ffmpeg_args.push("-b:v".to_string());
+        ffmpeg_args.push(bitrate.clone());
+    }
+
+    if let Some(crf) = args.crf {
+        ffmpeg_args.push("-crf".to_string());
+        ffmpeg_args.push(crf.to_string());
+    }
 
     if !fade_filter.is_empty() {
         ffmpeg_args.push("-vf".to_string());
