@@ -1,10 +1,10 @@
 [package]
 name = "aether-renderer-core"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 description = "A sacred Rust-based CLI for rendering transparent WebM/MP4/GIF from PNG sequences"
 license = "MIT"
-authors = ["Siria <siria@sacred-ai.com>"]
+authors = ["Mads Paaskesen <madspaaskesen@gmail.com>"]
 homepage = "https://sacred-ai.com/about/aetherrenderer"
 repository = "https://github.com/madspaaskesen/aether-renderer-core"
 readme = "README.md"

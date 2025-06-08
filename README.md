@@ -18,6 +18,7 @@ Built with love for artists, developers, and sacred animation workflows.
 - ✅ `.mp4` fallback (no alpha)
 - ✅ CLI flags for FPS, input folder, output path, format
 - ✅ Optional `--fade-in` and `--fade-out` for smooth loops
+- ✅ Handle errors & missing frames gracefully
 
 ---
 
@@ -77,6 +78,8 @@ cargo run -- --input ./my-frames.zip --output my.gif --fps 30 --format gif
 ---
 
 ## 📦 Download prebuilt binaries
+
+prebuilds for linux, mac & windows can be found under releases in github repository.
 
 🛠️ Download prebuilt binaries from the [Releases](https://github.com/madspaaskesen/aether-renderer-core/releases) page.
 
@@ -146,10 +149,10 @@ Here’s one frame from the sacred animation:
 ## 🔮 Roadmap
 
 - [x] Render `.png` → `.webm` (with alpha)
- - [x] Support `.mp4` export
+- [x] Support `.mp4` export
 - [ ] Add bitrate / CRF quality control
 - [x] `--fade-in`, `--fade-out` for soft loops
-- [ ] Handle errors & missing frames gracefully
+- [x] Handle errors & missing frames gracefully
 - [ ] Add optional CLI preview
 - [ ] Begin GUI version with Tauri (`aether-renderer`) 🌟
 
