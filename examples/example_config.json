@@ -1,0 +1,13 @@
+{
+  "input": "/Users/you/Downloads/frames.zip",
+  "output": "/Users/you/Downloads/output.webm",
+  "fps": 30,
+  "format": "webm",
+  "fade_in": 0.0,
+  "fade_out": 0.0,
+  "bitrate": null,
+  "crf": 24,
+  "preview": false,
+  "file_pattern": "*.png",
+  "verbose": true
+}
