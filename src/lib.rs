@@ -132,10 +132,7 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
             "-y",
             palette_path,
         ]);
-        let palette_status = match Command::new("ffmpeg")
-            .args(&palette_args)
-            .status()
-        {
+        let palette_status = match Command::new("ffmpeg").args(&palette_args).status() {
             Ok(s) => s,
             Err(e) => {
                 if e.kind() == std::io::ErrorKind::NotFound {
@@ -174,10 +171,7 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
         gif_args.push(format!("{} [x]; [x][1:v] paletteuse", gif_filter));
         gif_args.push("-y".to_string());
         gif_args.push(args.output.clone());
-        let gif_status = match Command::new("ffmpeg")
-            .args(&gif_args)
-            .status()
-        {
+        let gif_status = match Command::new("ffmpeg").args(&gif_args).status() {
             Ok(s) => s,
             Err(e) => {
                 if e.kind() == std::io::ErrorKind::NotFound {
