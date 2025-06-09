@@ -22,10 +22,7 @@ pub fn render_gif(
     palette_args.push("-y".into());
     palette_args.push(palette_path.into());
 
-    let palette_status = match Command::new("ffmpeg")
-        .args(&palette_args)
-        .status()
-    {
+    let palette_status = match Command::new("ffmpeg").args(&palette_args).status() {
         Ok(s) => s,
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
@@ -64,10 +61,7 @@ pub fn render_gif(
     gif_args.push("-y".into());
     gif_args.push(output.into());
 
-    let gif_status = match Command::new("ffmpeg")
-        .args(&gif_args)
-        .status()
-    {
+    let gif_status = match Command::new("ffmpeg").args(&gif_args).status() {
         Ok(s) => s,
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
