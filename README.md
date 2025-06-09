@@ -13,7 +13,7 @@ Built with love for artists, developers, and sacred animation workflows.
 
 ![Rust](https://img.shields.io/badge/built_with-rust-orange)
 ![FFmpeg](https://img.shields.io/badge/rendered_by-ffmpeg-blue)
-![SacredAI](https://img.shields.io/badge/powered%20by-%F0%9F%95%8A%EF%B8%8F%20Sacred%20AI-lightgrey?style=flat-square)
+[![SacredAI](https://img.shields.io/badge/powered%20by-%F0%9F%95%8A%EF%B8%8F%20Sacred%20AI-lightgrey?style=flat-square)](https://sacre-ai.com)
 
 ---
 
