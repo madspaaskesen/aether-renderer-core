@@ -35,9 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if let Some(input) = args.input {
-        let output = args
-            .output
-            .unwrap_or_else(|| PathBuf::from("output.webm"));
+        let output = args.output.unwrap_or_else(|| PathBuf::from("output.webm"));
 
         if args.verbose {
             println!("Rendering from CLI arguments");

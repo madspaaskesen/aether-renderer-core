@@ -47,7 +47,6 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
 
 /// Render using an already parsed configuration
 pub fn render(args: RenderConfig) -> Result<(), String> {
-
     // Check for ffmpeg availability upfront
     match Command::new("ffmpeg").arg("-version").status() {
         Ok(s) if s.success() => {}
