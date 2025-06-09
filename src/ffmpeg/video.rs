@@ -1,6 +1,4 @@
-use indicatif::{ProgressBar, ProgressStyle};
 use std::process::Command;
-use std::time::Duration;
 
 /// Render a video (webm/mp4) using ffmpeg
 pub fn render_video(
@@ -68,16 +66,6 @@ pub fn render_video(
     args.push("-y".into()); // Overwrite output file if it exists
     args.push(output.to_string());
 
-    let pb = ProgressBar::new_spinner();
-    pb.set_style(
-        ProgressStyle::with_template(
-            "{spinner:.green} 🌿 Rendering with FFmpeg... {elapsed_precise}",
-        )
-        .unwrap()
-        .tick_chars("⠁⠃⠇⠧⠷⠿⠻⠟⠯⠷⠾⠽⠻⠛⠋"),
-    );
-    pb.enable_steady_tick(Duration::from_millis(120));
-
     let status = match Command::new("ffmpeg").args(&args).status() {
         Ok(s) => s,
         Err(e) => {
@@ -93,11 +81,9 @@ pub fn render_video(
     };
 
     if status.success() {
-        pb.finish_with_message("✅ FFmpeg rendering complete!");
         println!("✅ Video exported: {}", output);
         Ok(())
     } else {
-        pb.finish_with_message("❌ ffmpeg failed. Check your frame pattern or input path.");
         Err("❌ ffmpeg failed. Check your frame pattern or input path.".into())
     }
 }
