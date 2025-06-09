@@ -5,6 +5,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 use utils::unzip_frames::unzip_frames;
+use utils::collect_frames::collect_input_frames;
 
 #[derive(Debug, Deserialize)]
 pub struct RenderConfig {
@@ -24,6 +25,8 @@ pub struct RenderConfig {
     pub crf: Option<u32>,
     #[serde(default)]
     pub preview: bool,
+    #[serde(default)]
+    pub file_pattern: Option<String>,
 }
 
 fn default_fps() -> u32 {
@@ -76,22 +79,22 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
         (input_path.clone(), None)
     };
 
+    let pattern = args
+        .file_pattern
+        .clone()
+        .unwrap_or_else(|| "*.png".to_string());
+    let frames = collect_input_frames(&working_input_path, Some(pattern.clone()))
+        .map_err(|e| format!("❌ Failed to read frames: {}", e))?;
+    let frame_count = frames.len() as u32;
+
     let input_pattern = working_input_path.join("frame_%04d.png");
     let input_str = input_pattern.to_str().unwrap();
 
-    let frame_count = fs::read_dir(&working_input_path)
-        .map_err(|e| format!("❌ Failed to read directory: {}", e))?
-        .filter_map(|e| e.ok())
-        .filter(|e| match e.path().extension().and_then(|s| s.to_str()) {
-            Some("png") | Some("webp") => true,
-            _ => false,
-        })
-        .count() as u32;
-
     if frame_count == 0 {
         return Err(format!(
-            "❌ No PNG files found in '{}'.",
-            working_input_path.display()
+            "❌ No input files found in '{}' matching pattern '{}'.",
+            working_input_path.display(),
+            pattern
         ));
     }
 
