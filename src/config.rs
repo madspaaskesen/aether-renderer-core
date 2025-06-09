@@ -22,6 +22,8 @@ pub struct RenderConfig {
     pub preview: bool,
     #[serde(default)]
     pub file_pattern: Option<String>,
+    #[serde(default)]
+    pub verbose: bool,
 }
 
 fn default_fps() -> u32 {
