@@ -24,7 +24,83 @@ Built with love for artists, developers, and sacred animation workflows.
 - ✅ Optional `--fade-in` and `--fade-out` for smooth loops
 - ✅ Optional `--bitrate` and `--crf` for quality control
 - ✅ Optional `--preview` to open the video after export
+- ✅ Automatically detects glob patterns vs numbered sequences
 - ✅ Handle errors & missing frames gracefully
+
+Built like a **triple-mode sacred core**:
+
+1. ✅ `--config` → full JSON or TOML-based config
+2. ✅ `--input + --output` CLI mode
+3. ✅ CLI override of config (hybrid input)
+
+Useful for overriding output resolution, fps, or preview without rewriting full config.
+Aiming to be super dev-friendly — *a pleasure to use*.
+
+---
+
+## 🔧 Usage
+
+### 1. Render using a config file
+```bash
+aether-renderer --config render.json
+```
+
+Supports `.json` or `.toml` formats.
+
+### 2. Render using CLI args
+
+```bash
+aether-renderer \
+  --input ./frames \
+  --output ./video.webm \
+  --fps 30 \
+  --file-pattern "scene1_*.png"
+```
+
+### 3. Mixed mode (config + override)
+
+```bash
+aether-renderer --config render.json --fps 60 --preview
+```
+
+CLI params override matching fields in the config.
+
+---
+
+## 🧾 Supported Parameters
+
+| Flag             | Type   | Default    | Description                         |
+| ---------------- | ------ | ---------- | ----------------------------------- |
+| `--input`        | Path   | *required* | Folder or ZIP with image frames     |
+| `--output`       | Path   | *required* | Output video file path              |
+| `--fps`          | Number | 30         | Frames per second                   |
+| `--file-pattern` | String | `*.png`    | Glob or sequence pattern for frames |
+| `--format`       | String | `webm`     | Output format (`webm`, `gif`, ...)  |
+| `--fade-in`      | Float  | `0.0`      | Seconds to fade in                  |
+| `--fade-out`     | Float  | `0.0`      | Seconds to fade out                 |
+| `--bitrate`      | String | *(none)*   | e.g. `2500k`                        |
+| `--crf`          | Number | *(none)*   | e.g. `23` for x264 (lower = better) |
+| `--preview`      | Flag   | false      | Enables preview mode                |
+| `--verbose`      | Flag   | false      | Prints detailed logs                |
+
+---
+
+## 💡 Notes
+
+* If `--file-pattern` contains `*`, `glob` mode is used automatically (`-pattern_type glob`).
+* Numbered patterns like `frame_%04d.png` use native ffmpeg sequence.
+* You can include only a partial config file — unset fields fallback to CLI or defaults.
+* Designed to integrate easily with GUI and queue systems.
+
+---
+
+## 🧪 Advanced
+
+- You can use `"frame_%04d.png"` for ffmpeg-native sequences.
+- `"*.png"` or `"scene*.png"` will auto-activate `-pattern_type glob`.
+- CLI `--bitrate` and `--crf` are mutually exclusive (if both set, `crf` takes priority).
+- CLI mode will fallback to defaults where parameters are missing.
+- The `--fade-in` and `--fade-out` flags apply ffmpeg's [`fade`](https://ffmpeg.org/ffmpeg-filters.html#fade) filter under the hood. The start of the fade out is automatically calculated from the frame count and FPS.
 
 ---
 
@@ -43,9 +119,7 @@ cargo run --release -- \
   --preview
 ```
 
-The `--fade-in` and `--fade-out` flags apply ffmpeg's [`fade`](https://ffmpeg.org/ffmpeg-filters.html#fade) filter under the hood. The start of the fade out is automatically calculated from the frame count and FPS.
-
-📂 Your input folder should contain files like:
+### 📂 Your input folder should contain files like:
 
 ```
 frame_0000.png
@@ -62,8 +136,7 @@ You can now also pass a .zip file containing frames:
 cargo run -- --input ./my-frames.zip --output my.webm --fps 30 --format webm
 ```
 
-
-📂 Your input folder or ZIP file must contain images named like:
+### 📂 Your input folder or ZIP file must contain images named like:
 
 ```
 frame_0000.png
@@ -167,6 +240,18 @@ Here’s one frame from the sacred animation:
 
 ---
 
+## 🧹 Code Style
+
+This project uses **Rust’s official formatting standard** via [`cargo fmt`](https://doc.rust-lang.org/rustfmt/).
+
+Before committing or opening a pull request, please run:
+
+```bash
+cargo fmt
+```
+
+---
+
 ## 🌿 License
 
 MIT — created with sacred care by [@madspaaskesen](https://github.com/madspaaskesen)
@@ -182,7 +267,7 @@ MIT — created with sacred care by [@madspaaskesen](https://github.com/madspaas
 
 ---
 
-## 💛 Made with love by Sacred-AI
+## 💛 Made with love by [Sacred-AI](https://sacred-ai.com)
 
 🙏 Made with clarity and care by [@mads](https://github.com/madspaaskesen) @ [@sacred-ai](https://github.com/Sacred-AI) 💛
 
