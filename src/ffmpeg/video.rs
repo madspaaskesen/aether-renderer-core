@@ -27,18 +27,24 @@ pub fn render_video(
         _ => unreachable!(),
     };
 
-    let mut args: Vec<String> = vec![
-        "-framerate".into(),
-        fps.to_string(),
-        "-i".into(),
-        input_pattern.to_string(),
+    let mut args: Vec<String> = vec!["-framerate".into(), fps.to_string()];
+
+    if input_pattern.contains('*') {
+        args.push("-pattern_type".into());
+        args.push("glob".into());
+    }
+
+    args.push("-i".into());
+    args.push(input_pattern.to_string());
+
+    args.extend_from_slice(&[
         "-c:v".into(),
         codec.to_string(),
         "-pix_fmt".into(),
         pix_fmt.to_string(),
         "-auto-alt-ref".into(),
         "0".into(),
-    ];
+    ]);
 
     if let Some(b) = bitrate {
         args.push("-b:v".into());

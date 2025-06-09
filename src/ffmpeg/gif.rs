@@ -10,15 +10,20 @@ pub fn render_gif(
 ) -> Result<(), String> {
     let palette_path = "palette.png";
 
+    let mut palette_args: Vec<String> = Vec::new();
+    if input_pattern.contains('*') {
+        palette_args.push("-pattern_type".into());
+        palette_args.push("glob".into());
+    }
+    palette_args.push("-i".into());
+    palette_args.push(input_pattern.into());
+    palette_args.push("-vf".into());
+    palette_args.push("fps=30,scale=640:-1:flags=lanczos,palettegen".into());
+    palette_args.push("-y".into());
+    palette_args.push(palette_path.into());
+
     let palette_status = match Command::new("ffmpeg")
-        .args([
-            "-i",
-            input_pattern,
-            "-vf",
-            "fps=30,scale=640:-1:flags=lanczos,palettegen",
-            "-y",
-            palette_path,
-        ])
+        .args(&palette_args)
         .status()
     {
         Ok(s) => s,
@@ -45,19 +50,22 @@ pub fn render_gif(
             gif_filter.push_str(filter);
         }
     }
+    let mut gif_args: Vec<String> = vec!["-framerate".into(), fps.to_string()];
+    if input_pattern.contains('*') {
+        gif_args.push("-pattern_type".into());
+        gif_args.push("glob".into());
+    }
+    gif_args.push("-i".into());
+    gif_args.push(input_pattern.into());
+    gif_args.push("-i".into());
+    gif_args.push(palette_path.into());
+    gif_args.push("-lavfi".into());
+    gif_args.push(format!("{} [x]; [x][1:v] paletteuse", gif_filter));
+    gif_args.push("-y".into());
+    gif_args.push(output.into());
+
     let gif_status = match Command::new("ffmpeg")
-        .args([
-            "-framerate",
-            &fps.to_string(),
-            "-i",
-            input_pattern,
-            "-i",
-            palette_path,
-            "-lavfi",
-            &format!("{} [x]; [x][1:v] paletteuse", gif_filter),
-            "-y",
-            output,
-        ])
+        .args(&gif_args)
         .status()
     {
         Ok(s) => s,
