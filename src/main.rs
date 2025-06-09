@@ -46,8 +46,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if args.verbose {
             println!("Loading config from {}", config.display());
         }
-        return aether_renderer_core::render_from_config(config.to_str().unwrap())
-            .map_err(|e| e.into());
+        let out = aether_renderer_core::render_from_config(config.to_str().unwrap())?;
+        if args.verbose {
+            println!("Rendered to {}", out);
+        }
+        return Ok(());
     }
 
     if let Some(input) = args.input {
@@ -71,7 +74,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             verbose: args.verbose,
         };
 
-        return aether_renderer_core::render(cfg).map_err(|e| e.into());
+        let out = aether_renderer_core::render(cfg)?;
+        if args.verbose {
+            println!("Rendered to {}", out);
+        }
+        return Ok(());
     }
 
     Args::command().print_help()?;

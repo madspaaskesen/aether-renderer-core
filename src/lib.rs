@@ -10,13 +10,13 @@ use std::process::Command;
 use std::time::Duration;
 
 /// Load configuration from file then render
-pub fn render_from_config(config_path: &str) -> Result<(), String> {
+pub fn render_from_config(config_path: &str) -> Result<String, String> {
     let args = RenderConfig::from_file(config_path)?;
     render(args)
 }
 
 /// Orchestrate rendering from a parsed configuration
-pub fn render(args: RenderConfig) -> Result<(), String> {
+pub fn render(args: RenderConfig) -> Result<String, String> {
     // Check for ffmpeg availability upfront
     match Command::new("ffmpeg").arg("-version").status() {
         Ok(s) if s.success() => {}
@@ -131,5 +131,5 @@ pub fn render(args: RenderConfig) -> Result<(), String> {
             eprintln!("⚠️ Failed to open video preview: {}", e);
         }
     }
-    Ok(())
+    Ok(args.output.clone())
 }
