@@ -5,6 +5,7 @@ Aether Renderer is a minimal and sacred media compiler for image sequences — n
 [![Crates.io](https://img.shields.io/crates/v/aether-renderer-core.svg)](https://crates.io/crates/aether-renderer-core)
 [![Downloads](https://img.shields.io/crates/d/aether-renderer-core.svg)](https://crates.io/crates/aether-renderer-core)
 [![License](https://img.shields.io/crates/l/aether-renderer-core.svg)](https://crates.io/crates/aether-renderer-core)
+[![CI](https://img.shields.io/github/actions/workflow/status/madspaaskesen/aether-renderer-core/ci.yml?style=flat-square)](https://github.com/madspaaskesen/aether-renderer-core)
 
 **Aether Renderer Core** is a lightweight, Rust-based and a sacred CLI tool to render transparent `.webm`, `.mp4`, and `.gif` from image sequences with alpha channel support, loop softening, and ffmpeg power.
 
@@ -12,27 +13,18 @@ Built with love for artists, developers, and sacred animation workflows.
 
 ![Rust](https://img.shields.io/badge/built_with-rust-orange)
 ![FFmpeg](https://img.shields.io/badge/rendered_by-ffmpeg-blue)
+![SacredAI](https://img.shields.io/badge/powered%20by-%F0%9F%95%8A%EF%B8%8F%20Sacred%20AI-lightgrey?style=flat-square)
 
 ---
 
 ## ✨ Features
 
-- ✅ Supports alpha channel export (via `yuva420p`)
-- ✅ Input PNG/WebP sequences with alpha from folder or .zip file
-- ✅ Export `.webm` with alpha (via `libvpx`)
-- ✅ Export `.gif` with alpha
-- ✅ `.mp4` fallback (no alpha)
-- ✅ CLI flags for FPS, input folder, output path, format
-- ✅ Optional `--fade-in` and `--fade-out` for smooth loops
-- ✅ Optional `--bitrate` and `--crf` for quality control
-- ✅ Optional `--preview` to open the video after export
-- 🌀 Live progress spinner with elapsed time (only visible with `--verbose`)
-- 🎛️ Supports both config file and inline CLI parameters
-- 🧠 Smart file matching with support for:
-  - `frame_%04d.png` (numbered sequence)
-  - `*.png` or `scene_*.png` (glob pattern)
-- ✅ Automatically detects glob patterns vs numbered sequences
-- ✅ Handle errors & missing frames gracefully
+- 📦 Supports ZIP archives or folders with image sequences
+- 🎯 Supports `frame_%04d.png` (numbered) or glob patterns like `scene_*.png`
+- 🌀 Live progress spinner with elapsed time (enabled via `--verbose`)
+- 🎛️ Render using either `--config` file or inline CLI arguments
+- ✨ Cross-platform (macOS, Linux, Windows)
+- 🔒 Minimal dependencies, no runtime server required
 
 Built like a **triple-mode sacred core**:
 
@@ -57,11 +49,7 @@ Supports `.json` or `.toml` formats.
 ### 2. Render using CLI args
 
 ```bash
-aether-renderer \
-  --input ./frames \
-  --output ./video.webm \
-  --fps 30 \
-  --file-pattern "scene1_*.png"
+aether-renderer-core --input frames.zip --output output.webm --file-pattern '*.png' --fps 30 --format webm --verbose
 ```
 
 ### 3. Mixed mode (config + override)
@@ -111,9 +99,7 @@ CLI params override matching fields in the config.
 
 ---
 
-## 🎛️ Config file via `--config`
-
-Here’s a ready-to-use example_config.json:
+## Example Configuration File (JSON)
 
 ```json
 {
@@ -131,7 +117,11 @@ Here’s a ready-to-use example_config.json:
 }
 ```
 
-> 🔸 Save this as [example_config.json](examples/example_config.json) and change values to match your settings.
+Save this as `example_config.json` and run:
+
+```sh
+aether-renderer-core --config example_config.json
+```
 
 ---
 
