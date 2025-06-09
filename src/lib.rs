@@ -4,8 +4,8 @@ use serde::Deserialize;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
-use utils::unzip_frames::unzip_frames;
 use utils::collect_frames::collect_input_frames;
+use utils::unzip_frames::unzip_frames;
 
 #[derive(Debug, Deserialize)]
 pub struct RenderConfig {
