@@ -117,7 +117,7 @@ CLI params override matching fields in the config.
 }
 ```
 
-Save this as `example_config.json` and run:
+Save this as [example_config.json](examples/example_config.json) and run:
 
 ```sh
 aether-renderer-core --config example_config.json
