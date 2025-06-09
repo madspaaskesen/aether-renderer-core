@@ -1,9 +1,11 @@
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use tempfile::tempdir;
 use zip::ZipArchive;
 
-/// Extracts frame_*.png from a ZIP into a temp folder, returns the folder path
+/// Extracts `frame_*.png` from a ZIP into a temporary folder and returns the
+/// folder path along with the temp directory guard.
 pub fn unzip_frames(
     zip_path: &Path,
 ) -> Result<(PathBuf, tempfile::TempDir), Box<dyn std::error::Error>> {
@@ -14,7 +16,6 @@ pub fn unzip_frames(
         ZipArchive::new(file).map_err(|e| format!("❌ Failed to read zip archive: {}", e))?;
 
     let temp_dir = tempdir().map_err(|e| format!("❌ Failed to create temp dir: {}", e))?;
-
     let temp_path = temp_dir.path().to_path_buf();
 
     let mut extracted = 0u32;
@@ -30,19 +31,11 @@ pub fn unzip_frames(
 
         let full_out_path = temp_path.join(filename);
         let mut out_file = File::create(&full_out_path).map_err(|e| {
-            format!(
-                "❌ Failed to create output file '{}': {}",
-                full_out_path.display(),
-                e
-            )
+            format!("❌ Failed to create output file '{}': {}", full_out_path.display(), e)
         })?;
 
         std::io::copy(&mut file, &mut out_file).map_err(|e| {
-            format!(
-                "❌ Failed to copy content to '{}': {}",
-                full_out_path.display(),
-                e
-            )
+            format!("❌ Failed to copy content to '{}': {}", full_out_path.display(), e)
         })?;
 
         println!("✅ Extracting: {}", full_out_path.display());
@@ -55,6 +48,25 @@ pub fn unzip_frames(
 
     println!("🗂️  Extracted frames to: {}", temp_path.display());
     Ok((temp_path.clone(), temp_dir))
+}
+
+/// Open the rendered output in the default system viewer
+pub fn open_output(path: &str) -> std::io::Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open").arg(path).status().map(|_| ())
+    }
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open").arg(path).status().map(|_| ())
+    }
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("cmd")
+            .args(["/C", "start", path])
+            .status()
+            .map(|_| ())
+    }
 }
 
 #[cfg(test)]
