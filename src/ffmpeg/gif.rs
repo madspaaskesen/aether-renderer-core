@@ -1,5 +1,7 @@
+use indicatif::{ProgressBar, ProgressStyle};
 use std::fs;
 use std::process::Command;
+use std::time::Duration;
 
 /// Render a GIF using palettegen + paletteuse filters
 pub fn render_gif(
@@ -61,6 +63,16 @@ pub fn render_gif(
     gif_args.push("-y".into());
     gif_args.push(output.into());
 
+    let pb = ProgressBar::new_spinner();
+    pb.set_style(
+        ProgressStyle::with_template(
+            "{spinner:.green} 🌿 Rendering with FFmpeg... {elapsed_precise}",
+        )
+        .unwrap()
+        .tick_chars("⠁⠃⠇⠧⠷⠿⠻⠟⠯⠷⠾⠽⠻⠛⠋"),
+    );
+    pb.enable_steady_tick(Duration::from_millis(120));
+
     let gif_status = match Command::new("ffmpeg").args(&gif_args).status() {
         Ok(s) => s,
         Err(e) => {
@@ -79,9 +91,11 @@ pub fn render_gif(
         .unwrap_or_else(|e| eprintln!("⚠️ Failed to remove palette file: {}", e));
 
     if gif_status.success() {
+        pb.finish_with_message("✅ GIF rendering complete!");
         println!("✅ GIF exported: {}", output);
         Ok(())
     } else {
+        pb.finish_with_message("❌ Failed to export GIF");
         Err("❌ Failed to export GIF".into())
     }
 }
