@@ -18,6 +18,22 @@ struct Args {
     #[arg(short, long)]
     output: Option<PathBuf>,
 
+    /// Optional file pattern (e.g. *.png)
+    #[arg(long)]
+    file_pattern: Option<String>,
+
+    /// Optional fps override
+    #[arg(long)]
+    fps: Option<u32>,
+
+    /// Optional format (e.g. webm, gif)
+    #[arg(long)]
+    format: Option<String>,
+
+    /// Optional preview toggle
+    #[arg(long, default_value_t = false)]
+    preview: bool,
+
     /// Enable verbose logging
     #[arg(long)]
     verbose: bool,
@@ -44,14 +60,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let cfg = aether_renderer_core::RenderConfig {
             input,
             output: output.to_string_lossy().into_owned(),
-            fps: 30,
-            format: "webm".into(),
-            fade_in: 0.0,
+            fps: args.fps.unwrap_or(30),
+            format: args.format.unwrap_or_else(|| "webm".into()),
+            fade_in: 0.0, // or add to Args if needed
             fade_out: 0.0,
             bitrate: None,
             crf: None,
-            preview: false,
-            file_pattern: None,
+            preview: args.preview,
+            file_pattern: args.file_pattern,
+            verbose: args.verbose,
         };
 
         return aether_renderer_core::render(cfg).map_err(|e| e.into());

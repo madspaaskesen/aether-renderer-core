@@ -60,7 +60,8 @@ pub fn render(args: RenderConfig) -> Result<(), String> {
         .map_err(|e| format!("❌ Failed to read frames: {}", e))?;
     let frame_count = frames.len() as u32;
 
-    let input_pattern = working_input_path.join("frame_%04d.png");
+    // Use the provided file pattern when building the ffmpeg input string
+    let input_pattern = working_input_path.join(&pattern);
     let input_str = input_pattern.to_str().unwrap();
 
     if frame_count == 0 {
