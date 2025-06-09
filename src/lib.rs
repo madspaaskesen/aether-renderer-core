@@ -42,6 +42,12 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
     let args: RenderConfig = serde_json::from_str(&config_str)
         .map_err(|e| format!("❌ Failed to parse config: {}", e))?;
 
+    render(args)
+}
+
+/// Render using an already parsed configuration
+pub fn render(args: RenderConfig) -> Result<(), String> {
+
     // Check for ffmpeg availability upfront
     match Command::new("ffmpeg").arg("-version").status() {
         Ok(s) if s.success() => {}
