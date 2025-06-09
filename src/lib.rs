@@ -5,16 +5,18 @@ pub mod utils;
 
 pub use config::RenderConfig;
 
+use indicatif::{ProgressBar, ProgressStyle};
 use std::process::Command;
+use std::time::Duration;
 
 /// Load configuration from file then render
-pub fn render_from_config(config_path: &str) -> Result<(), String> {
+pub fn render_from_config(config_path: &str) -> Result<String, String> {
     let args = RenderConfig::from_file(config_path)?;
     render(args)
 }
 
 /// Orchestrate rendering from a parsed configuration
-pub fn render(args: RenderConfig) -> Result<(), String> {
+pub fn render(args: RenderConfig) -> Result<String, String> {
     // Check for ffmpeg availability upfront
     match Command::new("ffmpeg").arg("-version").status() {
         Ok(s) if s.success() => {}
@@ -91,6 +93,21 @@ pub fn render(args: RenderConfig) -> Result<(), String> {
         input_str, args.output, args.fps
     );
 
+    let maybe_spinner = if args.verbose {
+        let pb = ProgressBar::new_spinner();
+        pb.set_style(
+            ProgressStyle::with_template(
+                "{spinner:.green} 🌿 Rendering with FFmpeg... {elapsed_precise}",
+            )
+            .unwrap()
+            .tick_chars("⠁⠃⠇⠧⠷⠿⠻⠟⠯⠷⠾⠽⠻⠛⠋"),
+        );
+        pb.enable_steady_tick(Duration::from_millis(120));
+        Some(pb)
+    } else {
+        None
+    };
+
     if args.format == "gif" {
         ffmpeg::gif::render_gif(input_str, &args.output, args.fps, Some(&fade_filter))?;
     } else {
@@ -105,10 +122,14 @@ pub fn render(args: RenderConfig) -> Result<(), String> {
         )?;
     }
 
+    if let Some(pb) = &maybe_spinner {
+        pb.finish_with_message("✅ FFmpeg rendering complete!");
+    }
+
     if args.preview {
         if let Err(e) = utils::open_output(&args.output) {
             eprintln!("⚠️ Failed to open video preview: {}", e);
         }
     }
-    Ok(())
+    Ok(args.output.clone())
 }
