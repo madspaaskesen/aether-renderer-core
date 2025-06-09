@@ -1,5 +1,7 @@
 # Aether Renderer Core
 
+Aether Renderer is a minimal and sacred media compiler for image sequences — now with smart CLI, glob support, and gentle rendering feedback 🕊️
+
 [![Crates.io](https://img.shields.io/crates/v/aether-renderer-core.svg)](https://crates.io/crates/aether-renderer-core)
 [![Downloads](https://img.shields.io/crates/d/aether-renderer-core.svg)](https://crates.io/crates/aether-renderer-core)
 [![License](https://img.shields.io/crates/l/aether-renderer-core.svg)](https://crates.io/crates/aether-renderer-core)
@@ -24,6 +26,11 @@ Built with love for artists, developers, and sacred animation workflows.
 - ✅ Optional `--fade-in` and `--fade-out` for smooth loops
 - ✅ Optional `--bitrate` and `--crf` for quality control
 - ✅ Optional `--preview` to open the video after export
+- 🌀 Live progress spinner with elapsed time (only visible with `--verbose`)
+- 🎛️ Supports both config file and inline CLI parameters
+- 🧠 Smart file matching with support for:
+  - `frame_%04d.png` (numbered sequence)
+  - `*.png` or `scene_*.png` (glob pattern)
 - ✅ Automatically detects glob patterns vs numbered sequences
 - ✅ Handle errors & missing frames gracefully
 
@@ -81,7 +88,7 @@ CLI params override matching fields in the config.
 | `--bitrate`      | String | *(none)*   | e.g. `2500k`                        |
 | `--crf`          | Number | *(none)*   | e.g. `23` for x264 (lower = better) |
 | `--preview`      | Flag   | false      | Enables preview mode                |
-| `--verbose`      | Flag   | false      | Prints detailed logs                |
+| `--verbose`      | Flag   | false      | Prints detailed logs + progress bar |
 
 ---
 
@@ -101,6 +108,30 @@ CLI params override matching fields in the config.
 - CLI `--bitrate` and `--crf` are mutually exclusive (if both set, `crf` takes priority).
 - CLI mode will fallback to defaults where parameters are missing.
 - The `--fade-in` and `--fade-out` flags apply ffmpeg's [`fade`](https://ffmpeg.org/ffmpeg-filters.html#fade) filter under the hood. The start of the fade out is automatically calculated from the frame count and FPS.
+
+---
+
+## 🎛️ Config file via `--config`
+
+Here’s a ready-to-use example_config.json:
+
+```json
+{
+  "input": "/Users/you/Downloads/frames.zip",
+  "output": "/Users/you/Downloads/output.webm",
+  "fps": 30,
+  "format": "webm",
+  "fade_in": 0.0,
+  "fade_out": 0.0,
+  "bitrate": null,
+  "crf": 24,
+  "preview": false,
+  "file_pattern": "*.png",
+  "verbose": true
+}
+```
+
+> 🔸 Save this as [example_config.json](examples/example_config.json) and change values to match your settings.
 
 ---
 
