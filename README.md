@@ -162,7 +162,7 @@ Here’s one frame from the sacred animation:
 - [x] Add bitrate / CRF quality control
 - [x] `--fade-in`, `--fade-out` for soft loops
 - [x] Handle errors & missing frames gracefully
-- [x] Add optional CLI preview
+- [x] Add optional CLI preview.
 - [ ] Begin GUI version with Tauri (`aether-renderer`) 🌟
 
 ---
