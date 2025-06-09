@@ -18,7 +18,6 @@ pub fn collect_input_frames(
 mod tests {
     use super::collect_input_frames;
     use std::fs::File;
-    use std::io::Write;
     use tempfile::tempdir;
 
     #[test]
