@@ -24,6 +24,7 @@ name = "aether-renderer-core"
 version = "0.2.0"
 dependencies = [
  "clap",
+ "glob",
  "serde",
  "serde_json",
  "tempfile",
@@ -307,6 +308,12 @@ dependencies = [
  "r-efi",
  "wasi",
 ]
+
+[[package]]
+name = "glob"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8d1add55171497b4705a648c6b583acafb01d58050a51727785f0b2c8e0a2b2"
 
 [[package]]
 name = "heck"
