@@ -27,38 +27,38 @@ pub fn render_video(
         _ => unreachable!(),
     };
 
-    let mut args = vec![
-        "-framerate",
-        &fps.to_string(),
-        "-i",
-        input_pattern,
-        "-c:v",
-        codec,
-        "-pix_fmt",
-        pix_fmt,
-        "-auto-alt-ref",
-        "0",
+    let mut args: Vec<String> = vec![
+        "-framerate".into(),
+        fps.to_string(),
+        "-i".into(),
+        input_pattern.to_string(),
+        "-c:v".into(),
+        codec.to_string(),
+        "-pix_fmt".into(),
+        pix_fmt.to_string(),
+        "-auto-alt-ref".into(),
+        "0".into(),
     ];
 
     if let Some(b) = bitrate {
-        args.push("-b:v");
-        args.push(b);
+        args.push("-b:v".into());
+        args.push(b.to_string());
     }
 
     if let Some(c) = crf {
-        args.push("-crf");
-        args.push(&c.to_string());
+        args.push("-crf".into());
+        args.push(c.to_string());
     }
 
     if let Some(filter) = fade_filter {
         if !filter.is_empty() {
-            args.push("-vf");
-            args.push(filter);
+            args.push("-vf".into());
+            args.push(filter.to_string());
         }
     }
 
-    args.push("-y");
-    args.push(output);
+    args.push("-y".into()); // Overwrite output file if it exists
+    args.push(output.to_string());
 
     let status = match Command::new("ffmpeg").args(&args).status() {
         Ok(s) => s,
