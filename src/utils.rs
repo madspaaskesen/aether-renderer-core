@@ -31,11 +31,19 @@ pub fn unzip_frames(
 
         let full_out_path = temp_path.join(filename);
         let mut out_file = File::create(&full_out_path).map_err(|e| {
-            format!("❌ Failed to create output file '{}': {}", full_out_path.display(), e)
+            format!(
+                "❌ Failed to create output file '{}': {}",
+                full_out_path.display(),
+                e
+            )
         })?;
 
         std::io::copy(&mut file, &mut out_file).map_err(|e| {
-            format!("❌ Failed to copy content to '{}': {}", full_out_path.display(), e)
+            format!(
+                "❌ Failed to copy content to '{}': {}",
+                full_out_path.display(),
+                e
+            )
         })?;
 
         println!("✅ Extracting: {}", full_out_path.display());

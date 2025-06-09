@@ -24,7 +24,10 @@ pub fn render_gif(
         Ok(s) => s,
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
-                return Err("❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.".into());
+                return Err(
+                    "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
+                        .into(),
+                );
             } else {
                 return Err(format!("❌ Failed to execute ffmpeg: {}", e));
             }
@@ -60,14 +63,18 @@ pub fn render_gif(
         Ok(s) => s,
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
-                return Err("❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.".into());
+                return Err(
+                    "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
+                        .into(),
+                );
             } else {
                 return Err(format!("❌ Failed to execute ffmpeg: {}", e));
             }
         }
     };
 
-    fs::remove_file(palette_path).unwrap_or_else(|e| eprintln!("⚠️ Failed to remove palette file: {}", e));
+    fs::remove_file(palette_path)
+        .unwrap_or_else(|e| eprintln!("⚠️ Failed to remove palette file: {}", e));
 
     if gif_status.success() {
         println!("✅ GIF exported: {}", output);

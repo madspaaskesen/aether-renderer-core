@@ -37,7 +37,6 @@ impl RenderConfig {
     pub fn from_file(path: &str) -> Result<Self, String> {
         let config_str = std::fs::read_to_string(path)
             .map_err(|_| format!("❌ Config file '{}' not found.", path))?;
-        serde_json::from_str(&config_str)
-            .map_err(|e| format!("❌ Failed to parse config: {}", e))
+        serde_json::from_str(&config_str).map_err(|e| format!("❌ Failed to parse config: {}", e))
     }
 }

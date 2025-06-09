@@ -65,7 +65,8 @@ pub fn render_video(
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
                 return Err(
-                    "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH.".into(),
+                    "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
+                        .into(),
                 );
             } else {
                 return Err(format!("❌ Failed to execute ffmpeg: {}", e));
