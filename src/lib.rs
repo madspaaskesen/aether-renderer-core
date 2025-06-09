@@ -119,17 +119,20 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
     if output_format == "gif" {
         let palette_path = "palette.png";
 
-        let palette_status = match Command::new("ffmpeg")
-            .args([
-                "-i",
-                input_str,
-                "-vf",
-                "fps=30,scale=640:-1:flags=lanczos,palettegen",
-                "-y",
-                palette_path,
-            ])
-            .status()
-        {
+        let mut palette_args: Vec<&str> = Vec::new();
+        if input_str.contains('*') {
+            palette_args.push("-pattern_type");
+            palette_args.push("glob");
+        }
+        palette_args.push("-i");
+        palette_args.push(input_str);
+        palette_args.extend([
+            "-vf",
+            "fps=30,scale=640:-1:flags=lanczos,palettegen",
+            "-y",
+            palette_path,
+        ]);
+        let palette_status = match Command::new("ffmpeg").args(&palette_args).status() {
             Ok(s) => s,
             Err(e) => {
                 if e.kind() == std::io::ErrorKind::NotFound {
@@ -153,21 +156,22 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
             gif_filter.push(',');
             gif_filter.push_str(&fade_filter);
         }
-        let gif_status = match Command::new("ffmpeg")
-            .args([
-                "-framerate",
-                &args.fps.to_string(),
-                "-i",
-                input_str,
-                "-i",
-                palette_path,
-                "-lavfi",
-                &format!("{} [x]; [x][1:v] paletteuse", gif_filter),
-                "-y",
-                &args.output,
-            ])
-            .status()
-        {
+        let mut gif_args: Vec<String> = Vec::new();
+        gif_args.push("-framerate".to_string());
+        gif_args.push(args.fps.to_string());
+        if input_str.contains('*') {
+            gif_args.push("-pattern_type".to_string());
+            gif_args.push("glob".to_string());
+        }
+        gif_args.push("-i".to_string());
+        gif_args.push(input_str.to_string());
+        gif_args.push("-i".to_string());
+        gif_args.push(palette_path.to_string());
+        gif_args.push("-lavfi".to_string());
+        gif_args.push(format!("{} [x]; [x][1:v] paletteuse", gif_filter));
+        gif_args.push("-y".to_string());
+        gif_args.push(args.output.clone());
+        let gif_status = match Command::new("ffmpeg").args(&gif_args).status() {
             Ok(s) => s,
             Err(e) => {
                 if e.kind() == std::io::ErrorKind::NotFound {
@@ -216,18 +220,21 @@ pub fn render_from_config(config_path: &str) -> Result<(), String> {
         _ => unreachable!(),
     };
 
-    let mut ffmpeg_args = vec![
-        "-framerate".to_string(),
-        args.fps.to_string(),
-        "-i".to_string(),
-        input_str.to_string(),
+    let mut ffmpeg_args = vec!["-framerate".to_string(), args.fps.to_string()];
+    if input_str.contains('*') {
+        ffmpeg_args.push("-pattern_type".to_string());
+        ffmpeg_args.push("glob".to_string());
+    }
+    ffmpeg_args.push("-i".to_string());
+    ffmpeg_args.push(input_str.to_string());
+    ffmpeg_args.extend(vec![
         "-c:v".to_string(),
         codec.to_string(),
         "-pix_fmt".to_string(),
         pix_fmt.to_string(),
         "-auto-alt-ref".to_string(),
         "0".to_string(),
-    ];
+    ]);
 
     if let Some(ref bitrate) = args.bitrate {
         ffmpeg_args.push("-b:v".to_string());
