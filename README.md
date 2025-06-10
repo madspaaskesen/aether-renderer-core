@@ -279,6 +279,18 @@ MIT — created with sacred care by [@madspaaskesen](https://github.com/madspaas
 
 ---
 
+## Aether Renderer GUI
+
+Aether renderer GUI is out now
+
+![Aether Renderer GUI](https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/aether-renderer-gui-preview-v0.1.0.jpg)
+
+See git repository: [https://github.com/madspaaskesen/aether-renderer-gui](https://github.com/madspaaskesen/aether-renderer-gui)
+
+Download installer from release page: [https://github.com/madspaaskesen/aether-renderer-gui/releases](https://github.com/madspaaskesen/aether-renderer-gui/releases)
+
+---
+
 ## 🌐 Related Projects
 
 - 🕊️ [Sacred-AI](https://sacred-ai.com)
