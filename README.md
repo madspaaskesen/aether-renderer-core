@@ -279,9 +279,11 @@ MIT — created with sacred care by [@madspaaskesen](https://github.com/madspaas
 
 ---
 
-## Aether Renderer GUI
+## 🪼 Aether Renderer GUI
 
-Aether renderer GUI is out now
+Aether renderer GUI is out now, it uses Aether renderer core as a crate 🪼
+
+You can now convert your transparent image sequences to webm, gif or mp4 from this gui also. 🪼
 
 ![Aether Renderer GUI](https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/aether-renderer-gui-preview-v0.1.0.jpg)
 
