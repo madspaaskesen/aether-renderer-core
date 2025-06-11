@@ -190,6 +190,24 @@ cargo run -- --input ./my-frames.zip --output my.gif --fps 30 --format gif
 
 ---
 
+### 📊 Aether Renderer Core — Benchmark Results
+
+Tested with a single frame duplicated N times, rendered via `aether-renderer-core`.
+
+![Average Time per Frame vs Frame Count](examples/Average%20Time%20per%20Frame%20vs%20Frame%20Count.png)
+
+| Frames    | Total Time (s) | Output Size (MB) | Avg Time/Frame (ms) |
+| --------- | -------------- | ---------------- | ------------------- |
+| **1**     | 1.17           | 0.00             | 1173.9              |
+| **10**    | 0.91           | 0.00             | 91.0                |
+| **100**   | 1.79           | 0.01             | 17.9                |
+| **1000**  | 13.13          | 0.13             | 13.1                |
+| **10000** | 112.07         | 1.28             | 11.2                |
+
+✨ Even at 10,000 frames, the renderer maintains \~11ms per frame performance — demonstrating excellent scalability, stability, and I/O handling.
+
+---
+
 ## 🧪 GUI Integration Phase
 
 This library is now integrated with the Aether Renderer GUI (built in Tauri)  
