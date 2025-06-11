@@ -25,6 +25,7 @@ Built with love for artists, developers, and sacred animation workflows.
 - 🎛️ Render using either `--config` file or inline CLI arguments
 - ✨ Cross-platform (macOS, Linux, Windows)
 - 🔒 Minimal dependencies, no runtime server required
+- 🤫 Quiet ffmpeg output by default (`--verbose-ffmpeg` for full logs)
 
 Built like a **triple-mode sacred core**:
 
@@ -78,6 +79,7 @@ CLI params override matching fields in the config.
 | `--crf`          | Number | *(none)*   | e.g. `23` for x264 (lower = better) |
 | `--preview`      | Flag   | false      | Enables preview mode                |
 | `--verbose`      | Flag   | false      | Prints detailed logs + progress bar |
+| `--verbose-ffmpeg` | Flag | false | Show full ffmpeg logs |
 
 ---
 
@@ -114,7 +116,8 @@ CLI params override matching fields in the config.
   "crf": 24,
   "preview": false,
   "file_pattern": "*.png",
-  "verbose": true
+  "verbose": true,
+  "verbose_ffmpeg": false
 }
 ```
 
