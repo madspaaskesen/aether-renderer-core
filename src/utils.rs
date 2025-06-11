@@ -8,6 +8,7 @@ use zip::ZipArchive;
 /// folder path along with the temp directory guard.
 pub fn unzip_frames(
     zip_path: &Path,
+    verbose: bool,
 ) -> Result<(PathBuf, tempfile::TempDir), Box<dyn std::error::Error>> {
     let file = File::open(zip_path)
         .map_err(|e| format!("❌ Failed to open zip file '{}': {}", zip_path.display(), e))?;
@@ -46,15 +47,24 @@ pub fn unzip_frames(
             )
         })?;
 
-        println!("✅ Extracting: {}", full_out_path.display());
+        if verbose {
+            println!("✅ Extracting: {}", full_out_path.display());
+        }
         extracted += 1;
     }
 
     if extracted == 0 {
         return Err("❌ No PNG files found in zip archive".into());
     }
-
-    println!("🗂️  Extracted frames to: {}", temp_path.display());
+      
+    if verbose {
+        if extracted > 1 {
+            println!("⚠️  Extracted {} frames from zip", extracted);
+        } else {
+            println!("✅ Extracted 1 frame from zip");
+        } 
+        println!("🗂️  Extracted frames to: {}", temp_path.display());
+    }
     Ok((temp_path.clone(), temp_dir))
 }
 
@@ -107,7 +117,7 @@ mod tests {
         let zip_path = dir.path().join("frames.zip");
         create_test_zip(&zip_path)?;
 
-        let (out_dir, _guard) = unzip_frames(&zip_path)?;
+        let (out_dir, _guard) = unzip_frames(&zip_path, false)?;
 
         let count = std::fs::read_dir(&out_dir)?.count();
         assert_eq!(count, 2);
