@@ -25,7 +25,10 @@ for count in FRAME_COUNTS:
         target = frame_dir / f"frame_{i:04d}.png"
         shutil.copy2(FRAME_SRC, target)
 
-    cmd = ['aether-renderer-core', '--input', str(frame_dir), '--output', str(output_file)]
+    # For the sake of this benchmark, we assume aether-renderer-core is a Rust binary
+    #cmd = ['aether-renderer-core', '--input', str(frame_dir), '--output', str(output_file)]
+    # Else use cargo to run the Rust binary
+    cmd = ['cargo', 'run', '--', '--input', str(frame_dir), '--output', str(output_file)]
 
     start = time.time()
     subprocess.run(cmd, check=True)
