@@ -79,15 +79,10 @@ pub fn open_output(path: &str) -> std::io::Result<()> {
 
 /// Resolve final output path based on `--app-output` CLI option.
 /// Returns the path to the output file and ensures the directory exists.
-pub fn apply_app_output(
-    output: &Path,
-    app_output: Option<PathBuf>,
-) -> std::io::Result<PathBuf> {
+pub fn apply_app_output(output: &Path, app_output: Option<PathBuf>) -> std::io::Result<PathBuf> {
     if let Some(dir) = app_output {
         fs::create_dir_all(&dir)?;
-        let file_name = output
-            .file_name()
-            .unwrap_or_else(|| output.as_os_str());
+        let file_name = output.file_name().unwrap_or_else(|| output.as_os_str());
         Ok(dir.join(file_name))
     } else {
         Ok(output.to_path_buf())

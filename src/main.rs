@@ -1,6 +1,6 @@
+use aether_renderer_core::utils::apply_app_output;
 use clap::{CommandFactory, Parser};
 use std::path::PathBuf;
-use aether_renderer_core::utils::apply_app_output;
 
 /// 🌸 Aether Renderer Core
 #[derive(Parser, Debug)]
