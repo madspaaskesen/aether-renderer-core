@@ -76,7 +76,6 @@ CLI params override matching fields in the config.
 | ------------------ | ------ | ---------- | ----------------------------------- |
 | `--input`          | Path   | *required* | Folder or ZIP with image frames     |
 | `--output`         | Path   | *required* | Output video file path              |
-| `--app-output`     | Path   | *(none)*   | Override folder for output file     |
 | `--fps`            | Number | 30         | Frames per second                   |
 | `--file-pattern`   | String | `*.png`    | Glob or sequence pattern for frames |
 | `--format`         | String | `webm`     | Output format (`webm`, `gif`, ...)  |
