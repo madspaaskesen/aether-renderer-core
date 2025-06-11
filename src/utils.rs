@@ -56,13 +56,13 @@ pub fn unzip_frames(
     if extracted == 0 {
         return Err("❌ No PNG files found in zip archive".into());
     }
-      
+
     if verbose {
         if extracted > 1 {
             println!("⚠️  Extracted {} frames from zip", extracted);
         } else {
             println!("✅ Extracted 1 frame from zip");
-        } 
+        }
         println!("🗂️  Extracted frames to: {}", temp_path.display());
     }
     Ok((temp_path.clone(), temp_dir))

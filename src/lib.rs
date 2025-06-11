@@ -58,7 +58,8 @@ pub fn render(args: RenderConfig) -> Result<String, String> {
         .map(|ext| ext == "zip")
         .unwrap_or(false)
     {
-        let (path, guard) = utils::unzip_frames(input_path, args.verbose).map_err(|e| e.to_string())?;
+        let (path, guard) =
+            utils::unzip_frames(input_path, args.verbose).map_err(|e| e.to_string())?;
         (path, Some(guard))
     } else {
         (input_path.clone(), None)
@@ -104,7 +105,7 @@ pub fn render(args: RenderConfig) -> Result<String, String> {
             input_str, args.output, args.fps
         );
     }
-    
+
     let maybe_spinner = if args.verbose {
         let pb = ProgressBar::new_spinner();
         pb.set_style(
