@@ -109,7 +109,13 @@ pub fn render(args: RenderConfig) -> Result<String, String> {
     };
 
     if args.format == "gif" {
-        ffmpeg::gif::render_gif(input_str, &args.output, args.fps, Some(&fade_filter))?;
+        ffmpeg::gif::render_gif(
+            input_str,
+            &args.output,
+            args.fps,
+            Some(&fade_filter),
+            args.verbose_ffmpeg,
+        )?;
     } else {
         ffmpeg::video::render_video(
             input_str,
@@ -119,6 +125,7 @@ pub fn render(args: RenderConfig) -> Result<String, String> {
             args.bitrate.as_deref(),
             args.crf,
             Some(&fade_filter),
+            args.verbose_ffmpeg,
         )?;
     }
 

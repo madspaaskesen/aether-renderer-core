@@ -9,6 +9,7 @@ pub fn render_video(
     bitrate: Option<&str>,
     crf: Option<u32>,
     fade_filter: Option<&str>,
+    verbose_ffmpeg: bool,
 ) -> Result<(), String> {
     let codec = match format {
         "webm" => "libvpx",
@@ -66,7 +67,13 @@ pub fn render_video(
     args.push("-y".into()); // Overwrite output file if it exists
     args.push(output.to_string());
 
-    let status = match Command::new("ffmpeg").args(&args).status() {
+    let status = match {
+        let mut cmd = Command::new("ffmpeg");
+        if !verbose_ffmpeg {
+            cmd.args(["-loglevel", "warning"]);
+        }
+        cmd.args(&args).status()
+    } {
         Ok(s) => s,
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {

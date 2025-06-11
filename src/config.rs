@@ -24,6 +24,8 @@ pub struct RenderConfig {
     pub file_pattern: Option<String>,
     #[serde(default)]
     pub verbose: bool,
+    #[serde(default)]
+    pub verbose_ffmpeg: bool,
 }
 
 fn default_fps() -> u32 {

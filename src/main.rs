@@ -37,6 +37,10 @@ struct Args {
     /// Enable verbose logging
     #[arg(long)]
     verbose: bool,
+
+    /// Show full ffmpeg logs
+    #[arg(long)]
+    verbose_ffmpeg: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -72,6 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             preview: args.preview,
             file_pattern: args.file_pattern,
             verbose: args.verbose,
+            verbose_ffmpeg: args.verbose_ffmpeg,
         };
 
         let out = aether_renderer_core::render(cfg)?;
