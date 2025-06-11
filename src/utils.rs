@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempfile::tempdir;
@@ -77,12 +77,24 @@ pub fn open_output(path: &str) -> std::io::Result<()> {
     }
 }
 
+/// Resolve final output path based on `--app-output` CLI option.
+/// Returns the path to the output file and ensures the directory exists.
+pub fn apply_app_output(output: &Path, app_output: Option<PathBuf>) -> std::io::Result<PathBuf> {
+    if let Some(dir) = app_output {
+        fs::create_dir_all(&dir)?;
+        let file_name = output.file_name().unwrap_or_else(|| output.as_os_str());
+        Ok(dir.join(file_name))
+    } else {
+        Ok(output.to_path_buf())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::unzip_frames;
+    use super::{apply_app_output, unzip_frames};
     use std::fs::File;
     use std::io::Write;
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
     use tempfile::tempdir;
     use zip::write::{FileOptions, ZipWriter};
     use zip::CompressionMethod;
@@ -114,6 +126,39 @@ mod tests {
         assert!(out_dir.join("frame_0000.png").exists());
         assert!(out_dir.join("frame_0001.png").exists());
 
+        Ok(())
+    }
+
+    #[test]
+    fn output_without_app_output() -> Result<(), Box<dyn std::error::Error>> {
+        let out = PathBuf::from("video.webm");
+        let result = apply_app_output(&out, None)?;
+        assert_eq!(result, PathBuf::from("video.webm"));
+        Ok(())
+    }
+
+    #[test]
+    fn output_with_relative_app_output() -> Result<(), Box<dyn std::error::Error>> {
+        let out = PathBuf::from("my.mp4");
+        let base_rel = PathBuf::from("test_previews_rel");
+        if base_rel.exists() {
+            std::fs::remove_dir_all(&base_rel)?;
+        }
+        let result = apply_app_output(&out, Some(base_rel.clone()))?;
+        assert_eq!(result, base_rel.join("my.mp4"));
+        assert!(base_rel.exists());
+        std::fs::remove_dir_all(&base_rel)?;
+        Ok(())
+    }
+
+    #[test]
+    fn output_with_absolute_app_output() -> Result<(), Box<dyn std::error::Error>> {
+        let out = PathBuf::from("my.gif");
+        let tmp = tempdir()?;
+        let abs = tmp.path().join("abs_previews");
+        let result = apply_app_output(&out, Some(abs.clone()))?;
+        assert_eq!(result, abs.join("my.gif"));
+        assert!(abs.exists());
         Ok(())
     }
 }
