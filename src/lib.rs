@@ -18,7 +18,17 @@ pub fn render_from_config(config_path: &str) -> Result<String, String> {
 /// Orchestrate rendering from a parsed configuration
 pub fn render(args: RenderConfig) -> Result<String, String> {
     // Check for ffmpeg availability upfront
-    match Command::new("ffmpeg").arg("-version").status() {
+    match {
+        let mut cmd = Command::new("ffmpeg");
+        cmd.arg("-version");
+
+        if !args.verbose_ffmpeg {
+            cmd.stdout(std::process::Stdio::null());
+            cmd.stderr(std::process::Stdio::null());
+        }
+
+        cmd.status()
+    } {
         Ok(s) if s.success() => {}
         Ok(_) => {
             return Err("❌ ffmpeg failed to run correctly.".into());
