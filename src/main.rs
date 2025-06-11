@@ -1,3 +1,4 @@
+use aether_renderer_core::utils::apply_app_output;
 use clap::{CommandFactory, Parser};
 use std::path::PathBuf;
 
@@ -17,6 +18,10 @@ struct Args {
     /// Output video path
     #[arg(short, long)]
     output: Option<PathBuf>,
+
+    /// Optional base folder for app previews
+    #[arg(long, value_name = "DIR", num_args = 0..=1, default_missing_value = "./apps/aether-renderer-gui/public/previews/")]
+    app_output: Option<PathBuf>,
 
     /// Optional file pattern (e.g. *.png)
     #[arg(long)]
@@ -54,7 +59,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if let Some(input) = args.input {
-        let output = args.output.unwrap_or_else(|| PathBuf::from("output.webm"));
+        let raw_output = args.output.unwrap_or_else(|| PathBuf::from("output.webm"));
+        let output_path = apply_app_output(&raw_output, args.app_output.clone())?;
+        println!("Resolved output path: {}", output_path.display());
 
         if args.verbose {
             println!("Rendering from CLI arguments");
@@ -62,7 +69,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let cfg = aether_renderer_core::RenderConfig {
             input,
-            output: output.to_string_lossy().into_owned(),
+            output: output_path.to_string_lossy().into_owned(),
             fps: args.fps.unwrap_or(30),
             format: args.format.unwrap_or_else(|| "webm".into()),
             fade_in: 0.0, // or add to Args if needed
