@@ -3,10 +3,10 @@ use std::time::Instant;
 use aether_renderer_core::{render, RenderConfig};
 
 #[test]
-fn benchmark_render_single_frame() {
+fn benchmark_render_single_frame() -> Result<(), Box<dyn std::error::Error>> {
     if Command::new("ffmpeg").arg("-version").output().is_err() {
         eprintln!("skipping cli_renders_mp4 - ffmpeg not installed");
-        return ;
+        return Ok(());
     }
     let config = RenderConfig {
         input: "tests/testdata".into(),
@@ -39,4 +39,5 @@ fn benchmark_render_single_frame() {
     // Clean up output file after benchmark
     let _ = std::fs::remove_file("tests/testdata/benchmark.webm");
     println!("Output file cleaned up after benchmark.");
+    Ok(())
 }
