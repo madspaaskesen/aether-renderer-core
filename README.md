@@ -1,4 +1,4 @@
-# Aether Renderer Core
+# 🪼 Aether Renderer Core
 
 Aether Renderer is a minimal and sacred media compiler for image sequences — now with smart CLI, glob support, and gentle rendering feedback 🕊️
 
@@ -65,21 +65,21 @@ CLI params override matching fields in the config.
 
 ## 🧾 Supported Parameters
 
-| Flag             | Type   | Default    | Description                         |
-| ---------------- | ------ | ---------- | ----------------------------------- |
-| `--input`        | Path   | *required* | Folder or ZIP with image frames     |
-| `--output`       | Path   | *required* | Output video file path              |
-| `--app-output`   | Path   | *(none)*   | Override folder for output file     |
-| `--fps`          | Number | 30         | Frames per second                   |
-| `--file-pattern` | String | `*.png`    | Glob or sequence pattern for frames |
-| `--format`       | String | `webm`     | Output format (`webm`, `gif`, ...)  |
-| `--fade-in`      | Float  | `0.0`      | Seconds to fade in                  |
-| `--fade-out`     | Float  | `0.0`      | Seconds to fade out                 |
-| `--bitrate`      | String | *(none)*   | e.g. `2500k`                        |
-| `--crf`          | Number | *(none)*   | e.g. `23` for x264 (lower = better) |
-| `--preview`      | Flag   | false      | Enables preview mode                |
-| `--verbose`      | Flag   | false      | Prints detailed logs + progress bar |
-| `--verbose-ffmpeg` | Flag | false | Show full ffmpeg logs |
+| Flag               | Type   | Default    | Description                         |
+| ------------------ | ------ | ---------- | ----------------------------------- |
+| `--input`          | Path   | *required* | Folder or ZIP with image frames     |
+| `--output`         | Path   | *required* | Output video file path              |
+| `--app-output`     | Path   | *(none)*   | Override folder for output file     |
+| `--fps`            | Number | 30         | Frames per second                   |
+| `--file-pattern`   | String | `*.png`    | Glob or sequence pattern for frames |
+| `--format`         | String | `webm`     | Output format (`webm`, `gif`, ...)  |
+| `--fade-in`        | Float  | `0.0`      | Seconds to fade in                  |
+| `--fade-out`       | Float  | `0.0`      | Seconds to fade out                 |
+| `--bitrate`        | String | *(none)*   | e.g. `2500k`                        |
+| `--crf`            | Number | *(none)*   | e.g. `23` for x264 (lower = better) |
+| `--preview`        | Flag   | false      | Enables preview mode                |
+| `--verbose`        | Flag   | false      | Prints detailed logs + progress bar |
+| `--verbose-ffmpeg` | Flag   | false      | Show full ffmpeg logs               |
 
 ---
 
@@ -261,7 +261,7 @@ Here’s one frame from the sacred animation:
 - [x] `--fade-in`, `--fade-out` for soft loops
 - [x] Handle errors & missing frames gracefully
 - [x] Add optional CLI preview
-- [ ] Begin GUI version with Tauri (`aether-renderer`) 🌟
+- [x] Begin GUI version with Tauri (`aether-renderer`) 🌟
 
 ---
 
