@@ -1,6 +1,6 @@
+use aether_renderer_core::{render, RenderConfig};
 use std::process::Command;
 use std::time::Instant;
-use aether_renderer_core::{render, RenderConfig};
 
 #[test]
 fn benchmark_render_single_frame() -> Result<(), Box<dyn std::error::Error>> {
