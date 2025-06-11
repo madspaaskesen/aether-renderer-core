@@ -1,5 +1,12 @@
 # 🪼 Aether Renderer Core
 
+> 🌿 Aether Renderer Core is now being tested through real-world use inside the GUI.  
+> Output behavior and flags will evolve gently based on how it breathes with the interface.
+
+## What is it?
+
+A lightweight CLI tool for rendering frame‐based content using FFmpeg.
+
 Aether Renderer is a minimal and sacred media compiler for image sequences — now with smart CLI, glob support, and gentle rendering feedback 🕊️
 
 [![Crates.io](https://img.shields.io/crates/v/aether-renderer-core.svg)](https://crates.io/crates/aether-renderer-core)
@@ -181,6 +188,21 @@ cargo run -- --input ./my-frames.zip --output my.gif --fps 30 --format gif
 ```
 
 (Just make sure ffmpeg is installed)
+
+---
+
+## 🧪 GUI Integration Phase
+
+This library is now integrated with the Aether Renderer GUI (built in Tauri)  
+to test real-world file access, path compatibility, and command flow.
+
+We expect small improvements based on how the frontend interacts with:
+
+- `--app-output` path resolution
+- `--preview` usage and thumbnail flow
+- FFmpeg behavior and log control (`--verbose-ffmpeg`)
+
+Feedback from GUI testing will guide the next minor release.
 
 ---
 
