@@ -18,7 +18,7 @@ pub struct RenderConfig {
     pub bitrate: Option<String>,
     #[serde(default)]
     pub crf: Option<u32>,
-    #[serde(default, rename = "preview")]
+    #[serde(default)]
     pub open: bool,
     #[serde(default)]
     pub file_pattern: Option<String>,

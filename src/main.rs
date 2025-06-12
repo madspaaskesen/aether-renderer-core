@@ -50,6 +50,10 @@ struct Args {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
+    if args.preview.is_some() && args.open {
+        eprintln!("⚠️ '--open' is only supported for full render. Ignoring for preview.");
+    }
+
     if let Some(preview_arg) = args.preview {
         let input = args
             .input
