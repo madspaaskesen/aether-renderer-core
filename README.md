@@ -72,29 +72,35 @@ CLI params override matching fields in the config.
 
 ## 🧾 Supported Parameters
 
-| Flag               | Type   | Default    | Description                         |
-| ------------------ | ------ | ---------- | ----------------------------------- |
-| `--input`          | Path   | *required* | Folder or ZIP with image frames     |
-| `--output`         | Path   | *required* | Output video file path              |
-| `--fps`            | Number | 30         | Frames per second                   |
-| `--file-pattern`   | String | `*.png`    | Glob or sequence pattern for frames |
-| `--format`         | String | `webm`     | Output format (`webm`, `gif`, ...)  |
-| `--fade-in`        | Float  | `0.0`      | Seconds to fade in                  |
-| `--fade-out`       | Float  | `0.0`      | Seconds to fade out                 |
-| `--bitrate`        | String | *(none)*   | e.g. `2500k`                        |
-| `--crf`            | Number | *(none)*   | e.g. `23` for x264 (lower = better) |
-| `--preview`        | Flag   | false      | Enables preview mode                |
-| `--verbose`        | Flag   | false      | Prints detailed logs + progress bar |
-| `--verbose-ffmpeg` | Flag   | false      | Show full ffmpeg logs               |
+| Flag               | Type   | Default      | Description                         |
+| ------------------ | ------ | ------------ | ----------------------------------- |
+| `--input`          | Path   | *required*   | Folder or ZIP with image frames     |
+| `--output`         | Path   | *required*   | Output video file path              |
+| `--fps`            | Number | 30           | Frames per second                   |
+| `--file-pattern`   | String | `*.png`      | Glob or sequence pattern for frames |
+| `--format`         | String | `webm`       | Output format (`webm`, `gif`, ...)  |
+| `--fade-in`        | Float  | `0.0`        | Seconds to fade in                  |
+| `--fade-out`       | Float  | `0.0`        | Seconds to fade out                 |
+| `--bitrate`        | String | *(none)*     | e.g. `2500k`                        |
+| `--crf`            | Number | *(none)*     | e.g. `23` for x264 (lower = better) |
+| `--preview`        | Flag   | false        | Enable preview mode (view 1 frame)  |
+| `--preview`        | Number | Middle frame | Preview frame Number as specified   |
+| `--open`           | Flag   | false        | Open output file on OS when done    |
+| `--verbose`        | Flag   | false        | Prints detailed logs + progress bar |
+| `--verbose-ffmpeg` | Flag   | false        | Show full ffmpeg logs               |
 
 ---
 
 ## 💡 Notes
 
 * If `--file-pattern` contains `*`, `glob` mode is used automatically (`-pattern_type glob`).
-* Numbered patterns like `frame_%04d.png` use native ffmpeg sequence.
+  * Numbered patterns like `frame_%04d.png` use native ffmpeg sequence.
 * You can include only a partial config file — unset fields fallback to CLI or defaults.
 * Designed to integrate easily with GUI and queue systems.
+* The `--preview` flag can optionally take a number.  
+  * If provided, that frame will be rendered as a PNG.  
+  * If no number is passed, the middle frame is used.
+* The `--open` flag opens the output video after rendering (only works with full video render).
 
 ---
 
