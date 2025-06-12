@@ -202,3 +202,30 @@ fn cli_errors_on_empty_folder() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!status.success(), "expected failure for empty input folder");
     Ok(())
 }
+
+#[test]
+fn cli_preview_from_zip() -> Result<(), Box<dyn std::error::Error>> {
+    let zip_path = Path::new("tests/testdata/two-frames.zip");
+    assert!(zip_path.exists());
+
+    let tmp = tempdir()?;
+    let out_file = tmp.path().join("prev.png");
+
+    let status = Command::new("cargo")
+        .args([
+            "run",
+            "--quiet",
+            "--",
+            "--input",
+            zip_path.to_str().unwrap(),
+            "--output",
+            out_file.to_str().unwrap(),
+            "--preview",
+            "1",
+        ])
+        .status()?;
+
+    assert!(status.success(), "cargo run failed");
+    assert!(out_file.exists(), "preview image not created");
+    Ok(())
+}

@@ -146,10 +146,68 @@ pub fn render(args: RenderConfig) -> Result<String, String> {
         pb.finish_with_message("✅ FFmpeg rendering complete!");
     }
 
-    if args.preview {
+    if args.open {
         if let Err(e) = utils::open_output(&args.output) {
             eprintln!("⚠️ Failed to open video preview: {}", e);
         }
     }
     Ok(args.output.clone())
+}
+
+/// Extract a single frame from an input folder or ZIP archive
+pub fn preview_frame(
+    input: &std::path::Path,
+    file_pattern: Option<String>,
+    frame_index: Option<usize>,
+    output: &std::path::Path,
+    verbose: bool,
+) -> Result<String, String> {
+    if !input.exists() {
+        return Err(format!(
+            "❌ Input path '{}' does not exist.",
+            input.display()
+        ));
+    }
+
+    if input.extension().map(|ext| ext == "zip").unwrap_or(false) {
+        let count = utils::count_pngs_in_zip(input).map_err(|e| e.to_string())?;
+        if count == 0 {
+            return Err("❌ No PNG files found in zip archive".into());
+        }
+        let idx = frame_index.unwrap_or(count / 2);
+        if idx >= count {
+            return Err(format!(
+                "❌ Frame index {} out of range (0..{})",
+                idx,
+                count - 1
+            ));
+        }
+        utils::extract_frame_from_zip(input, idx, output).map_err(|e| e.to_string())?;
+    } else {
+        let pattern = file_pattern.clone().unwrap_or_else(|| "*.png".to_string());
+        let frames = input::collect_input_frames(input, Some(pattern.clone()))
+            .map_err(|e| format!("❌ Failed to read frames: {}", e))?;
+        if frames.is_empty() {
+            return Err(format!(
+                "❌ No input files found in '{}' matching pattern '{}'",
+                input.display(),
+                pattern
+            ));
+        }
+        let idx = frame_index.unwrap_or(frames.len() / 2);
+        if idx >= frames.len() {
+            return Err(format!(
+                "❌ Frame index {} out of range (0..{})",
+                idx,
+                frames.len() - 1
+            ));
+        }
+        std::fs::copy(&frames[idx], output)
+            .map_err(|e| format!("❌ Failed to copy frame: {}", e))?;
+    }
+
+    if verbose {
+        println!("🖼️ Preview saved to: {}", output.display());
+    }
+    Ok(output.to_string_lossy().into_owned())
 }

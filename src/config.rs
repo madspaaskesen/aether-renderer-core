@@ -19,7 +19,7 @@ pub struct RenderConfig {
     #[serde(default)]
     pub crf: Option<u32>,
     #[serde(default)]
-    pub preview: bool,
+    pub open: bool,
     #[serde(default)]
     pub file_pattern: Option<String>,
     #[serde(default)]
