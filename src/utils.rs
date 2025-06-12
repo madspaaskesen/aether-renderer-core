@@ -72,8 +72,8 @@ pub fn unzip_frames(
 pub fn count_pngs_in_zip(zip_path: &Path) -> Result<usize, Box<dyn std::error::Error>> {
     let file = File::open(zip_path)
         .map_err(|e| format!("❌ Failed to open zip file '{}': {}", zip_path.display(), e))?;
-    let mut archive = ZipArchive::new(file)
-        .map_err(|e| format!("❌ Failed to read zip archive: {}", e))?;
+    let mut archive =
+        ZipArchive::new(file).map_err(|e| format!("❌ Failed to read zip archive: {}", e))?;
     let mut count = 0usize;
     for i in 0..archive.len() {
         let file = archive.by_index(i)?;
@@ -93,8 +93,8 @@ pub fn extract_frame_from_zip(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let file = File::open(zip_path)
         .map_err(|e| format!("❌ Failed to open zip file '{}': {}", zip_path.display(), e))?;
-    let mut archive = ZipArchive::new(file)
-        .map_err(|e| format!("❌ Failed to read zip archive: {}", e))?;
+    let mut archive =
+        ZipArchive::new(file).map_err(|e| format!("❌ Failed to read zip archive: {}", e))?;
     let mut png_indices = Vec::new();
     for i in 0..archive.len() {
         let f = archive.by_index(i)?;
@@ -107,15 +107,23 @@ pub fn extract_frame_from_zip(
         return Err("❌ No PNG files found in zip archive".into());
     }
     if frame_index >= png_indices.len() {
-        return Err(format!("❌ Frame index {} out of range (0..{})", frame_index, png_indices.len() - 1).into());
+        return Err(format!(
+            "❌ Frame index {} out of range (0..{})",
+            frame_index,
+            png_indices.len() - 1
+        )
+        .into());
     }
     let mut file = archive.by_index(png_indices[frame_index])?;
     let mut out = File::create(output).map_err(|e| {
-        format!("❌ Failed to create output file '{}': {}", output.display(), e)
+        format!(
+            "❌ Failed to create output file '{}': {}",
+            output.display(),
+            e
+        )
     })?;
-    std::io::copy(&mut file, &mut out).map_err(|e| {
-        format!("❌ Failed to copy content to '{}': {}", output.display(), e)
-    })?;
+    std::io::copy(&mut file, &mut out)
+        .map_err(|e| format!("❌ Failed to copy content to '{}': {}", output.display(), e))?;
     Ok(())
 }
 

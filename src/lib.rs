@@ -163,21 +163,24 @@ pub fn preview_frame(
     verbose: bool,
 ) -> Result<String, String> {
     if !input.exists() {
-        return Err(format!("❌ Input path '{}' does not exist.", input.display()));
+        return Err(format!(
+            "❌ Input path '{}' does not exist.",
+            input.display()
+        ));
     }
 
-    if input
-        .extension()
-        .map(|ext| ext == "zip")
-        .unwrap_or(false)
-    {
+    if input.extension().map(|ext| ext == "zip").unwrap_or(false) {
         let count = utils::count_pngs_in_zip(input).map_err(|e| e.to_string())?;
         if count == 0 {
             return Err("❌ No PNG files found in zip archive".into());
         }
         let idx = frame_index.unwrap_or(count / 2);
         if idx >= count {
-            return Err(format!("❌ Frame index {} out of range (0..{})", idx, count - 1));
+            return Err(format!(
+                "❌ Frame index {} out of range (0..{})",
+                idx,
+                count - 1
+            ));
         }
         utils::extract_frame_from_zip(input, idx, output).map_err(|e| e.to_string())?;
     } else {
@@ -193,7 +196,11 @@ pub fn preview_frame(
         }
         let idx = frame_index.unwrap_or(frames.len() / 2);
         if idx >= frames.len() {
-            return Err(format!("❌ Frame index {} out of range (0..{})", idx, frames.len() - 1));
+            return Err(format!(
+                "❌ Frame index {} out of range (0..{})",
+                idx,
+                frames.len() - 1
+            ));
         }
         std::fs::copy(&frames[idx], output)
             .map_err(|e| format!("❌ Failed to copy frame: {}", e))?;
