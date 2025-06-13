@@ -61,7 +61,12 @@ pub struct RenderReport {
     pub notes: Option<String>,
 }
 impl RenderReport {
-    pub fn new(frames_rendered: usize, files_zipped: Option<usize>, preview: bool, notes: Option<String>) -> Self {
+    pub fn new(
+        frames_rendered: usize,
+        files_zipped: Option<usize>,
+        preview: bool,
+        notes: Option<String>,
+    ) -> Self {
         Self {
             frames_rendered,
             preview,
