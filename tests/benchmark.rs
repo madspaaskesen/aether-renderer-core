@@ -19,6 +19,7 @@ fn benchmark_render_single_frame() -> Result<(), Box<dyn std::error::Error>> {
         bitrate: None,
         crf: None,
         open: false,
+        preview: None,
         verbose: false,
         verbose_ffmpeg: false,
     };

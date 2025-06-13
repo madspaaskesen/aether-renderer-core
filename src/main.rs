@@ -50,31 +50,6 @@ struct Args {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
-    if args.preview.is_some() && args.open {
-        eprintln!("⚠️ '--open' is only supported for full render. Ignoring for preview.");
-    }
-
-    if let Some(preview_arg) = args.preview {
-        let input = args
-            .input
-            .ok_or_else(|| "--preview requires --input".to_string())?;
-        let mut out_path = args.output.unwrap_or_else(|| PathBuf::from("preview.png"));
-        if out_path.extension().is_some() {
-            out_path.set_extension("png");
-        } else {
-            out_path = out_path.with_extension("png");
-        }
-        let frame_idx = preview_arg.map(|v| v as usize);
-        aether_renderer_core::preview_frame(
-            &input,
-            args.file_pattern.clone(),
-            frame_idx,
-            &out_path,
-            args.verbose,
-        )?;
-        return Ok(());
-    }
-
     if let Some(config) = args.config {
         if args.verbose {
             println!("Loading config from {}", config.display());
@@ -103,6 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             bitrate: None,
             crf: None,
             open: args.open,
+            preview: args.preview.flatten().map(|n| n as usize),
             file_pattern: args.file_pattern,
             verbose: args.verbose,
             verbose_ffmpeg: args.verbose_ffmpeg,

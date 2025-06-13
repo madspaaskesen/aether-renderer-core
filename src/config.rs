@@ -21,6 +21,8 @@ pub struct RenderConfig {
     #[serde(default)]
     pub open: bool,
     #[serde(default)]
+    pub preview: Option<usize>, // None = no preview, Some(n) = preview n frames
+    #[serde(default)]
     pub file_pattern: Option<String>,
     #[serde(default)]
     pub verbose: bool,
@@ -42,5 +44,44 @@ impl RenderConfig {
         let config_str = std::fs::read_to_string(path)
             .map_err(|_| format!("❌ Config file '{}' not found.", path))?;
         serde_json::from_str(&config_str).map_err(|e| format!("❌ Failed to parse config: {}", e))
+    }
+
+    pub fn is_preview(&self) -> bool {
+        self.preview.is_some()
+    }
+
+    pub fn preview_frame_limit(&self) -> Option<usize> {
+        self.preview
+    }
+}
+
+pub struct RenderReport {
+    pub frames_rendered: usize,
+    pub preview: bool,
+    pub notes: Option<String>,
+}
+impl RenderReport {
+    pub fn new(frames_rendered: usize, files_zipped: Option<usize>, preview: bool, notes: Option<String>) -> Self {
+        Self {
+            frames_rendered,
+            preview,
+            notes,
+        }
+    }
+
+    pub fn summary(&self) -> String {
+        let mut summary = format!("Rendered {} frames", self.frames_rendered);
+        if self.preview {
+            summary.push_str(", with preview");
+        }
+        if let Some(notes) = &self.notes {
+            summary.push_str(&format!(". Notes: {}", notes));
+        }
+        summary
+    }
+}
+impl std::fmt::Display for RenderReport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.summary())
     }
 }

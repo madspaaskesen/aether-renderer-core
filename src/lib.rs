@@ -6,6 +6,7 @@ pub mod utils;
 pub use config::RenderConfig;
 
 use indicatif::{ProgressBar, ProgressStyle};
+use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
 
@@ -17,6 +18,32 @@ pub fn render_from_config(config_path: &str) -> Result<String, String> {
 
 /// Orchestrate rendering from a parsed configuration
 pub fn render(args: RenderConfig) -> Result<String, String> {
+    // Validate output path
+    if args.output.is_empty() {
+        return Err("❌ Output path cannot be empty.".into());
+    }
+
+    // Is this a preview render?
+    if args.is_preview() {
+        if args.open {
+            eprintln!("⚠️ '--open' is only supported for full render. Ignoring for preview.");
+        }
+        let mut out_path = PathBuf::from(&args.output);
+        if out_path.extension().is_some() {
+            out_path.set_extension("png");
+        } else {
+            out_path = out_path.with_extension("png");
+        }
+        preview_frame(
+            &args.input,
+            args.file_pattern.clone(),
+            args.preview_frame_limit(),
+            &out_path,
+            args.verbose,
+        )?;
+        return Ok(out_path.to_string_lossy().into_owned());
+    }
+
     // Check for ffmpeg availability upfront
     match {
         let mut cmd = Command::new("ffmpeg");
@@ -113,7 +140,7 @@ pub fn render(args: RenderConfig) -> Result<String, String> {
                 "{spinner:.green} 🌿 Rendering with FFmpeg... {elapsed_precise}",
             )
             .unwrap()
-            .tick_chars("⠁⠃⠇⠧⠷⠿⠻⠟⠯⠷⠾⠽⠻⠛⠋"),
+            .tick_chars("⠁⠃⠇⠧⠷⠿⠻⠹⠸⠰⠠   ⠟⠏⠛⠋  ⠻⠯⠷⠾⠽"),
         );
         pb.enable_steady_tick(Duration::from_millis(120));
         Some(pb)
