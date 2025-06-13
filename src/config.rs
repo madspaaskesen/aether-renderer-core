@@ -56,37 +56,9 @@ impl RenderConfig {
 }
 
 pub struct RenderReport {
-    pub frames_rendered: usize,
+    pub output_path: PathBuf,
+    pub frames_rendered: Option<usize>,
+    pub ffmpeg_warnings: Vec<String>,
     pub preview: bool,
     pub notes: Option<String>,
-}
-impl RenderReport {
-    pub fn new(
-        frames_rendered: usize,
-        files_zipped: Option<usize>,
-        preview: bool,
-        notes: Option<String>,
-    ) -> Self {
-        Self {
-            frames_rendered,
-            preview,
-            notes,
-        }
-    }
-
-    pub fn summary(&self) -> String {
-        let mut summary = format!("Rendered {} frames", self.frames_rendered);
-        if self.preview {
-            summary.push_str(", with preview");
-        }
-        if let Some(notes) = &self.notes {
-            summary.push_str(&format!(". Notes: {}", notes));
-        }
-        summary
-    }
-}
-impl std::fmt::Display for RenderReport {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.summary())
-    }
 }
