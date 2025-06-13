@@ -18,6 +18,10 @@ pub fn render_from_config(config_path: &str) -> Result<String, String> {
 
 /// Orchestrate rendering from a parsed configuration
 pub fn render(args: RenderConfig) -> Result<String, String> {
+    if args.verbose {
+        let version = env!("CARGO_PKG_VERSION");
+        eprintln!("🪼 Aether Renderer v{version} starting...");
+    }
     // Validate output path
     if args.output.is_empty() {
         return Err("❌ Output path cannot be empty.".into());
