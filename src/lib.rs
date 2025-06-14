@@ -49,7 +49,7 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
         )?;
         return Ok(RenderReport {
             output_path: PathBuf::from(out_path.to_string_lossy().into_owned()),
-            frames_rendered: None,
+            frames_rendered: Some(1),
             ffmpeg_warnings: Vec::new(),
             preview: true,
             notes: Some("Preview complete.".into()),
@@ -164,7 +164,7 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
         None
     };
 
-    let render_report = if args.format == "gif" {
+    let mut render_report = if args.format == "gif" {
         ffmpeg::gif::render_gif(
             input_str,
             &args.output,
@@ -184,6 +184,9 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
             args.verbose_ffmpeg,
         )
     }?;
+
+    // Post-inject known input frame count after rendering
+    render_report.frames_rendered = Some(frame_count as usize);
 
     if let Some(pb) = &maybe_spinner {
         pb.finish_with_message("✅ FFmpeg rendering complete!");
