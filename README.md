@@ -12,7 +12,8 @@ Aether Renderer is a minimal and sacred media compiler for image sequences — n
 [![Crates.io](https://img.shields.io/crates/v/aether-renderer-core.svg)](https://crates.io/crates/aether-renderer-core)
 [![Downloads](https://img.shields.io/crates/d/aether-renderer-core.svg)](https://crates.io/crates/aether-renderer-core)
 [![License](https://img.shields.io/crates/l/aether-renderer-core.svg)](https://crates.io/crates/aether-renderer-core)
-[![CI](https://img.shields.io/github/actions/workflow/status/madspaaskesen/aether-renderer-core/ci.yml?style=flat-square)](https://github.com/madspaaskesen/aether-renderer-core)
+[![CI](https://img.shields.io/github/actions/workflow/status/madspaaskesen/aether-renderer-core/ci.yml)](https://github.com/madspaaskesen/aether-renderer-core)
+![Tests](https://img.shields.io/badge/tests-22_passed-green)
 
 **Aether Renderer Core** is a lightweight, Rust-based and a sacred CLI tool to render transparent `.webm`, `.mp4`, and `.gif` from image sequences with alpha channel support, loop softening, and ffmpeg power.
 
@@ -20,7 +21,7 @@ Built with love for artists, developers, and sacred animation workflows.
 
 ![Rust](https://img.shields.io/badge/built_with-rust-orange)
 ![FFmpeg](https://img.shields.io/badge/rendered_by-ffmpeg-blue)
-[![SacredAI](https://img.shields.io/badge/powered%20by-%F0%9F%95%8A%EF%B8%8F%20Sacred%20AI-lightgrey?style=flat-square)](https://sacre-ai.com)
+[![SacredAI](https://img.shields.io/badge/powered%20by-%F0%9F%95%8A%EF%B8%8F%20Sacred%20AI-lightgrey)](https://sacre-ai.com)
 
 ---
 
@@ -49,7 +50,7 @@ Aiming to be super dev-friendly — *a pleasure to use*.
 
 ### 1. Render using a config file
 ```bash
-aether-renderer --config render.json
+aether-renderer-core --config render.json
 ```
 
 Supports `.json` or `.toml` formats.
@@ -63,7 +64,7 @@ aether-renderer-core --input frames.zip --output output.webm --file-pattern '*.p
 ### 3. Mixed mode (config + override)
 
 ```bash
-aether-renderer --config render.json --fps 60 --preview
+aether-renderer-core --config render.json --fps 60 --preview
 ```
 
 CLI params override matching fields in the config.
@@ -142,6 +143,8 @@ aether-renderer-core --config example_config.json
 ---
 
 ## 🧪 Usage
+
+Run as if you have downloaded source code via cargo run.
 
 ```bash
 cargo run --release -- \
@@ -244,7 +247,67 @@ prebuilds for linux, mac & windows can be found under releases in github reposit
 
 ---
 
-## 🧪 Tests
+Perfect — that's a wise and user-friendly decision.
+You keep **consistency** with the crate name (`aether-renderer-core`)
+✅ and reduce confusion across GitHub, crates.io, cargo installs, and CLI usage.
+
+---
+
+## 🔧 About the Binary Name
+
+The default binary is called:
+
+```
+aether-renderer-core
+```
+
+This name is consistent whether you:
+
+* Install via `cargo`:
+
+  ```bash
+  cargo install aether-renderer-core
+  ```
+
+* Download from GitHub Releases for:
+
+  * `macOS`: `aether-renderer-core-v0.4.0-macos-x86_64`
+  * `Windows`: `aether-renderer-core-v0.4.0-windows-x86_64.exe`
+  * `Linux`: `aether-renderer-core-v0.4.0-linux-x86_64`
+
+If you prefer a shorter alias, you can rename it after download:
+
+```bash
+mv aether-renderer-core-v0.4.0-linux-x86_64 aether
+./aether --config config.json
+```
+
+But all examples in this guide will use the full name:
+
+```bash
+aether-renderer-core --config config.json
+```
+
+---
+
+## 🧪 Test Coverage
+
+Aether Renderer Core is built with care and covered by **22 focused tests**, including:
+
+* ✅ **Config parsing** — from file and CLI
+* 🎞️ **Render flow** — for both GIF and video output
+* 🧠 **RenderReport** — structured reporting with summary output
+* ⚙️ **FFmpeg stderr scanning** — detects drops, warnings, deprecations
+* 💥 **Failure handling** — invalid input, unsupported formats, empty folders
+* 🧳 **Mac-style ZIP handling** — ignores hidden files like `__MACOSX/`
+* 🔍 **Preview mode** — validates shortcut rendering
+* 📂 **Frame counting** — matches real files extracted/rendered
+
+> 🌸 Tests reflect both **expected success** and **graceful error recovery**, ensuring stability across platforms.
+
+---
+
+## 🧪 Running tests
 
 This project contains both unit tests and integration tests. The unit tests live
 next to the code they verify (for example in
@@ -260,6 +323,10 @@ cargo test
 The integration suite relies on `ffmpeg` being available on your system. If
 `ffmpeg` is missing, the rendering test is skipped but all other tests still
 run.
+
+22 sacred tests 🌿 — that’s beautiful, elegant, and symbolic.
+
+Let’s honor that in the README like this:
 
 ---
 
@@ -330,11 +397,13 @@ MIT — created with sacred care by [@madspaaskesen](https://github.com/madspaas
 
 ## 🪼 Aether Renderer GUI
 
-Aether renderer GUI is out now, it uses Aether renderer core as a crate 🪼
+Aether renderer GUI v0.1.1 is out now, it uses Aether renderer core as a crate 🪼
 
 You can now convert your transparent image sequences to webm, gif or mp4 from this gui also. 🪼
 
-![Aether Renderer GUI](https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/aether-renderer-gui-preview-v0.1.0.jpg)
+![Aether Renderer GUI](https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/aether-renderer-gui-preview-v0.1.1-light.png)
+
+![Aether Renderer GUI Dark-mode](https://ojkwbrxgljlgelqndiai.supabase.co/storage/v1/object/public/sacred-ai/web/aether-renderer/aether-renderer-gui-preview-v0.1.1-light-dark-fade.gif)
 
 See git repository: [https://github.com/madspaaskesen/aether-renderer-gui](https://github.com/madspaaskesen/aether-renderer-gui)
 
