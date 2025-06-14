@@ -15,7 +15,15 @@ include = [
     "README.md",
     "LICENSE"
 ]
-exclude = ["*.DS_Store","Cargo.toml.orig"]
+exclude = [
+    "*.DS_Store",
+    "dist/",
+    "release-*",
+    "*.zip",
+    "*.png",
+    "*.dmg",
+    "Cargo.toml.orig"
+]
 
 [lib]
 name = "aether_renderer_core"
