@@ -28,7 +28,7 @@ fn test_render_report_summary() {
 #[test]
 fn test_render_video_from_folder() {
     let input = PathBuf::from("tests/testdata");
-    let output = "tests/output/test_video.mp4";
+    let output = "tests/test_video.mp4";
 
     let cfg = RenderConfig {
         input: input.clone(),
@@ -57,7 +57,7 @@ fn test_render_video_from_folder() {
 #[test]
 fn test_render_gif_from_zip() {
     let input = PathBuf::from("tests/testdata/two-frames.zip");
-    let output = "tests/output/test.gif";
+    let output = "tests/test.gif";
 
     let cfg = RenderConfig {
         input: input.clone(),
