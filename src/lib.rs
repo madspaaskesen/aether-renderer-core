@@ -8,7 +8,7 @@ pub use config::RenderConfig;
 pub use report::RenderReport;
 
 use indicatif::{ProgressBar, ProgressStyle};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
 
@@ -28,6 +28,11 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
     if args.output.is_empty() {
         return Err("❌ Output path cannot be empty.".into());
     }
+
+    match args.format.as_str() {
+        "webm" | "mp4" | "gif" => Ok::<(), String>(()),
+        _ => Err("Unsupported format".into()),
+    }?;
 
     // Is this a preview render?
     if args.is_preview() {
@@ -187,6 +192,25 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
 
     // Post-inject known input frame count after rendering
     render_report.frames_rendered = Some(frame_count as usize);
+
+    if let Some(ext) = Path::new(&args.output).extension().and_then(|s| s.to_str()) {
+        let ext = ext.to_lowercase();
+        let expected_ext = match args.format.as_str() {
+            "webm" => "webm",
+            "mp4" => "mp4",
+            "gif" => "gif",
+            _ => "",
+        };
+
+        if ext != expected_ext {
+            let warning = format!(
+                "⚠️ Warning: Output extension '{}' does not match format '{}'",
+                ext, args.format
+            );
+            render_report.notes =
+                Some(render_report.notes.clone().unwrap_or_default() + &format!("\n{}", warning));
+        }
+    }
 
     if let Some(pb) = &maybe_spinner {
         pb.finish_with_message("✅ FFmpeg rendering complete!");

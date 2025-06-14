@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+#[derive(Debug)]
 pub struct RenderReport {
     pub output_path: PathBuf,
     pub frames_rendered: Option<usize>,
