@@ -19,6 +19,7 @@ exclude = [
     ".DS_Store",
     ".*.DS_Store",
     "dist/",
+    "target/",
     "release-*",
     "*.zip",
     "*.png",
