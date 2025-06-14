@@ -43,13 +43,30 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }}
 
+      - name: Package Linux Binary
+        if: runner.os == 'Linux'
+        run: |
+          cp target/release/aether-renderer-core .
+          zip aether-renderer-core-${{ github.ref_name }}-linux-x86_64.zip aether-renderer-core
+
+      - name: Package macOS Binary
+        if: runner.os == 'macOS'
+        run: |
+          cp target/release/aether-renderer-core .
+          zip aether-renderer-core-${{ github.ref_name }}-macos-x86_64.zip aether-renderer-core
+
+      - name: Package Windows Binary
+        if: runner.os == 'Windows'
+        run: |
+          cp target/release/aether-renderer-core.exe .
+          7z a aether-renderer-core-${{ github.ref_name }}-windows-x86_64.zip aether-renderer-core.exe
+
       - name: Rename binary
         shell: bash
         run: |
           mkdir -p dist
           cp target/${{ matrix.target }}/release/aether-renderer-core${{ matrix.ext }} \
             dist/aether-renderer-core-${{ github.ref_name }}-${{ matrix.name }}${{ matrix.ext }}
-
 
       - name: Upload release asset
         uses: softprops/action-gh-release@v1
