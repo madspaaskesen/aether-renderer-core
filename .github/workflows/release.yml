@@ -47,13 +47,13 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           cp target/${{ matrix.target }}/release/aether-renderer-core .
-          zip aether-renderer-core-${{ github.ref_name }}-linux-x86_64.zip aether-renderer-core
+          zip aether-renderer-core-${{ github.ref_name }}-${{ matrix.name }}.zip aether-renderer-core
 
       - name: Package macOS Binary
         if: runner.os == 'macOS'
         run: |
           cp target/${{ matrix.target }}/release/aether-renderer-core .
-          zip aether-renderer-core-${{ github.ref_name }}-macos-x86_64.zip aether-renderer-core
+          zip aether-renderer-core-${{ github.ref_name }}-${{ matrix.name }}.zip aether-renderer-core
 
       - name: Package Windows Binary
         if: runner.os == 'Windows'
@@ -65,8 +65,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          cp target/${{ matrix.target }}/release/aether-renderer-core${{ matrix.ext }} \
-            dist/aether-renderer-core-${{ github.ref_name }}-${{ matrix.name }}${{ matrix.ext }}
+          # The following line is disabled for now
+          # cp target/${{ matrix.target }}/release/aether-renderer-core${{ matrix.ext }} dist/
+          cp aether-renderer-core-${{ github.ref_name }}-${{ matrix.name }}.zip dist/
 
       - name: Upload release asset
         uses: softprops/action-gh-release@v1
