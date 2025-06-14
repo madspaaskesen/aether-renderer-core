@@ -45,31 +45,31 @@ jobs:
 
       - name: Prepare release directory
         run: |
-          mkdir -p dist
-          cp README.md dist/
-          cp LICENSE dist/
-          cp SUPPORT.md dist/
-          cp -r examples/ dist/
+          mkdir -p release-${{ matrix.name }}
+          cp README.md release-${{ matrix.name }}/
+          cp LICENSE release-${{ matrix.name }}/
+          cp SUPPORT.md release-${{ matrix.name }}/
+          cp -r examples/ release-${{ matrix.name }}/
 
       - name: Package Linux Binary
         if: runner.os == 'Linux'
         run: |
-          cp target/${{ matrix.target }}/release/aether-renderer-core dist/
-          zip -r aether-renderer-core-${{ github.ref_name }}-${{ matrix.name }}.zip dist/*
+          cp target/${{ matrix.target }}/release/aether-renderer-core release-${{ matrix.name }}/
+          zip -r aether-renderer-core-${{ github.ref_name }}-${{ matrix.name }}.zip release-${{ matrix.name }}/*
 
       - name: Package macOS Binary
         if: runner.os == 'macOS'
         run: |
-          cp target/${{ matrix.target }}/release/aether-renderer-core dist/
-          zip -r aether-renderer-core-${{ github.ref_name }}-${{ matrix.name }}.zip dist/*
+          cp target/${{ matrix.target }}/release/aether-renderer-core release-${{ matrix.name }}/
+          zip -r aether-renderer-core-${{ github.ref_name }}-${{ matrix.name }}.zip release-${{ matrix.name }}/*
 
       - name: Package Windows Binary
         if: runner.os == 'Windows'
         run: |
-          cp target/${{ matrix.target }}/release/aether-renderer-core.exe dist/
-          7z a aether-renderer-core-${{ github.ref_name }}-windows-x86_64.zip dist/*
+          cp target/${{ matrix.target }}/release/aether-renderer-core.exe release-${{ matrix.name }}/
+          7z a aether-renderer-core-${{ github.ref_name }}-${{ matrix.name }}.zip release-${{ matrix.name }}/*
 
-      - name: Rename binary
+      - name: Rename binary / Copy to dist
         shell: bash
         run: |
           mkdir -p dist
