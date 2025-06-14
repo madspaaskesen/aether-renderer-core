@@ -148,17 +148,55 @@ pub fn open_output(path: &str) -> std::io::Result<()> {
 
 pub fn scan_ffmpeg_stderr(stderr: &str) -> Vec<String> {
     let mut warnings = Vec::new();
+    let stderr_lc = stderr.to_lowercase(); // 👈 normalize
 
-    if stderr.contains("drop") {
+    if stderr_lc.contains("drop") {
         warnings.push("⚠️ FFmpeg reported frame drops.".to_string());
     }
 
-    if stderr.contains("missing") {
+    if stderr_lc.contains("missing") {
         warnings.push("⚠️ Possible missing or unreadable frame(s).".to_string());
     }
 
-    if stderr.contains("buffer") || stderr.contains("underrun") {
+    if stderr_lc.contains("buffer") || stderr_lc.contains("underrun") {
         warnings.push("⚠️ Buffer underrun or encoding delay detected.".to_string());
+    }
+
+    if stderr_lc.contains("deprecated") {
+        warnings.push("⚠️ Deprecated options used in FFmpeg command.".to_string());
+    }
+
+    if stderr_lc.contains("high frame rate") {
+        warnings.push("⚠️ High frame rate detected, may cause performance issues.".to_string());
+    }
+
+    if stderr_lc.contains("invalid frame") {
+        warnings.push("⚠️ Invalid frame detected in input.".to_string());
+    }
+
+    if stderr_lc.contains("no such file or directory") {
+        warnings.push("⚠️ Input file not found or inaccessible.".to_string());
+    }
+
+    if stderr_lc.contains("unrecognized option") {
+        warnings.push("⚠️ Unrecognized FFmpeg option used.".to_string());
+    }
+
+    if stderr_lc.contains("error") {
+        warnings.push("❌ FFmpeg encountered an error.".to_string());
+    }
+
+    if stderr_lc.contains("warning") {
+        warnings.push("⚠️ FFmpeg issued a warning.".to_string());
+    }
+
+    if stderr_lc.contains("frame rate very high") {
+        warnings
+            .push("⚠️ Frame rate very high for a muxer not efficiently supporting it.".to_string());
+    }
+
+    if stderr.contains("duration") && stderr.contains("Past") {
+        warnings.push("⚠️ Past frame duration too large.".to_string());
     }
 
     warnings
