@@ -1,4 +1,4 @@
-use std::process::Command;
+use crate::utils;
 
 /// Render a video (webm/mp4) using ffmpeg
 pub fn render_video(
@@ -66,31 +66,17 @@ pub fn render_video(
 
     args.push("-y".into()); // Overwrite output file if it exists
     args.push(output.to_string());
-
-    let status = match {
-        let mut cmd = Command::new("ffmpeg");
-        if !verbose_ffmpeg {
-            cmd.args(["-loglevel", "warning"]);
-        }
-        cmd.args(&args).status()
-    } {
-        Ok(s) => s,
-        Err(e) => {
-            if e.kind() == std::io::ErrorKind::NotFound {
-                return Err(
-                    "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
-                        .into(),
-                );
-            } else {
-                return Err(format!("❌ Failed to execute ffmpeg: {}", e));
-            }
-        }
-    };
-
-    if status.success() {
-        println!("✅ Video exported: {}", output);
-        Ok(())
-    } else {
-        Err("❌ ffmpeg failed. Check your frame pattern or input path.".into())
+    if !verbose_ffmpeg {
+        args.push("-loglevel".into());
+        args.push("warning".into());
     }
+
+    let video_stderr = match utils::run_ffmpeg_with_output(&args) {
+        Ok((_, stderr)) => stderr,
+        Err(e) => return Err(format!("❌ Failed to execute ffmpeg: {}", e)),
+    };
+    let _video_warnings = utils::scan_ffmpeg_stderr(&video_stderr);
+
+    println!("✅ Video exported: {}", output);
+    Ok(())
 }

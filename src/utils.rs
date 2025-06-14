@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, ExitStatus};
 use tempfile::tempdir;
 use zip::ZipArchive;
 
@@ -144,6 +144,44 @@ pub fn open_output(path: &str) -> std::io::Result<()> {
             .status()
             .map(|_| ())
     }
+}
+
+pub fn scan_ffmpeg_stderr(stderr: &str) -> Vec<String> {
+    let mut warnings = Vec::new();
+
+    if stderr.contains("drop") {
+        warnings.push("⚠️ FFmpeg reported frame drops.".to_string());
+    }
+
+    if stderr.contains("missing") {
+        warnings.push("⚠️ Possible missing or unreadable frame(s).".to_string());
+    }
+
+    if stderr.contains("buffer") || stderr.contains("underrun") {
+        warnings.push("⚠️ Buffer underrun or encoding delay detected.".to_string());
+    }
+
+    warnings
+}
+
+pub fn run_ffmpeg_with_output(args: &[String]) -> Result<(ExitStatus, String), String> {
+    let output = Command::new("ffmpeg").args(args).output().map_err(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            "❌ ffmpeg not found in PATH.".to_string()
+        } else {
+            format!("❌ ffmpeg failed to run: {}", e)
+        }
+    })?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "❌ ffmpeg exited with code {}",
+            output.status.code().unwrap_or(-1)
+        ));
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    Ok((output.status, stderr))
 }
 
 #[cfg(test)]
