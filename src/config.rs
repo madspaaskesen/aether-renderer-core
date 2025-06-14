@@ -54,11 +54,3 @@ impl RenderConfig {
         self.preview
     }
 }
-
-pub struct RenderReport {
-    pub output_path: PathBuf,
-    pub frames_rendered: Option<usize>,
-    pub ffmpeg_warnings: Vec<String>,
-    pub preview: bool,
-    pub notes: Option<String>,
-}

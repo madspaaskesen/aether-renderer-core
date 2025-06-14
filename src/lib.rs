@@ -1,9 +1,11 @@
 pub mod config;
 pub mod ffmpeg;
 pub mod input;
+pub mod report;
 pub mod utils;
 
 pub use config::RenderConfig;
+pub use report::RenderReport;
 
 use indicatif::{ProgressBar, ProgressStyle};
 use std::path::PathBuf;
@@ -11,13 +13,13 @@ use std::process::Command;
 use std::time::Duration;
 
 /// Load configuration from file then render
-pub fn render_from_config(config_path: &str) -> Result<String, String> {
+pub fn render_from_config(config_path: &str) -> Result<RenderReport, String> {
     let args = RenderConfig::from_file(config_path)?;
     render(args)
 }
 
 /// Orchestrate rendering from a parsed configuration
-pub fn render(args: RenderConfig) -> Result<String, String> {
+pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
     if args.verbose {
         let version = env!("CARGO_PKG_VERSION");
         eprintln!("🪼 Aether Renderer v{version} starting...");
@@ -45,10 +47,19 @@ pub fn render(args: RenderConfig) -> Result<String, String> {
             &out_path,
             args.verbose,
         )?;
-        return Ok(out_path.to_string_lossy().into_owned());
+        return Ok(RenderReport {
+            output_path: PathBuf::from(out_path.to_string_lossy().into_owned()),
+            frames_rendered: None,
+            ffmpeg_warnings: Vec::new(),
+            preview: true,
+            notes: Some("Preview complete.".into()),
+        });
     }
 
     // Check for ffmpeg availability upfront
+    if args.verbose_ffmpeg {
+        println!("🔍 Checking for ffmpeg...");
+    }
     match {
         let mut cmd = Command::new("ffmpeg");
         cmd.arg("-version");
@@ -144,7 +155,8 @@ pub fn render(args: RenderConfig) -> Result<String, String> {
                 "{spinner:.green} 🌿 Rendering with FFmpeg... {elapsed_precise}",
             )
             .unwrap()
-            .tick_chars("⠁⠃⠇⠧⠷⠿⠻⠹⠸⠰⠠   ⠟⠏⠛⠋  ⠻⠯⠷⠾⠽"),
+            //.tick_chars("⠁⠃⠇⠧⠷⠿⠻⠹⠸⠰⠠   ⠟⠏⠛⠋  ⠻⠯⠷⠾⠽"),
+            .tick_chars("䷀䷫䷌䷅䷤䷥䷄䷍䷪"),
         );
         pb.enable_steady_tick(Duration::from_millis(120));
         Some(pb)
@@ -152,14 +164,14 @@ pub fn render(args: RenderConfig) -> Result<String, String> {
         None
     };
 
-    if args.format == "gif" {
+    let render_report = if args.format == "gif" {
         ffmpeg::gif::render_gif(
             input_str,
             &args.output,
             args.fps,
             Some(&fade_filter),
             args.verbose_ffmpeg,
-        )?;
+        )
     } else {
         ffmpeg::video::render_video(
             input_str,
@@ -170,8 +182,8 @@ pub fn render(args: RenderConfig) -> Result<String, String> {
             args.crf,
             Some(&fade_filter),
             args.verbose_ffmpeg,
-        )?;
-    }
+        )
+    }?;
 
     if let Some(pb) = &maybe_spinner {
         pb.finish_with_message("✅ FFmpeg rendering complete!");
@@ -182,7 +194,7 @@ pub fn render(args: RenderConfig) -> Result<String, String> {
             eprintln!("⚠️ Failed to open video preview: {}", e);
         }
     }
-    Ok(args.output.clone())
+    Ok(render_report)
 }
 
 /// Extract a single frame from an input folder or ZIP archive

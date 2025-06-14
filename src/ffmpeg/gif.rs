@@ -1,5 +1,7 @@
 use std::fs;
+use std::path::PathBuf;
 
+use crate::report::RenderReport;
 use crate::utils;
 
 /// Render a GIF using palettegen + paletteuse filters
@@ -9,7 +11,7 @@ pub fn render_gif(
     fps: u32,
     fade_filter: Option<&str>,
     verbose_ffmpeg: bool,
-) -> Result<(), String> {
+) -> Result<RenderReport, String> {
     let palette_path = "palette.png";
 
     // ----- 1. Generate palette -----
@@ -73,6 +75,11 @@ pub fn render_gif(
     fs::remove_file(palette_path)
         .unwrap_or_else(|e| eprintln!("⚠️ Failed to remove palette file: {}", e));
 
-    println!("✅ GIF exported: {}", output);
-    Ok(())
+    Ok(RenderReport {
+        output_path: PathBuf::from(output),
+        frames_rendered: None,
+        ffmpeg_warnings: _gif_warnings,
+        preview: false,
+        notes: Some("GIF export via palettegen".into()),
+    })
 }

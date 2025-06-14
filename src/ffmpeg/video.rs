@@ -1,3 +1,6 @@
+use std::path::PathBuf;
+
+use crate::report::RenderReport;
 use crate::utils;
 
 /// Render a video (webm/mp4) using ffmpeg
@@ -10,7 +13,7 @@ pub fn render_video(
     crf: Option<u32>,
     fade_filter: Option<&str>,
     verbose_ffmpeg: bool,
-) -> Result<(), String> {
+) -> Result<RenderReport, String> {
     let codec = match format {
         "webm" => "libvpx",
         "mp4" => "libx264",
@@ -77,6 +80,11 @@ pub fn render_video(
     };
     let _video_warnings = utils::scan_ffmpeg_stderr(&video_stderr);
 
-    println!("✅ Video exported: {}", output);
-    Ok(())
+    Ok(RenderReport {
+        output_path: PathBuf::from(output),
+        frames_rendered: None,
+        ffmpeg_warnings: _video_warnings,
+        preview: false,
+        notes: Some("Video render complete.".into()),
+    })
 }

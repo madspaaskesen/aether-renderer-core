@@ -1,3 +1,4 @@
+use aether_renderer_core::RenderReport;
 use clap::{CommandFactory, Parser};
 use std::path::PathBuf;
 
@@ -54,11 +55,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if args.verbose {
             println!("Loading config from {}", config.display());
         }
-        let out = aether_renderer_core::render_from_config(config.to_str().unwrap())?;
-        if args.verbose {
-            println!("Rendered to {}", out);
-        }
-        return Ok(());
+
+        return match aether_renderer_core::render_from_config(config.to_str().unwrap()) {
+            Ok(report) => {
+                get_render_report(report, args.verbose);
+                Ok(())
+            }
+            Err(e) => Err(e.into()),
+        };
     }
 
     if let Some(input) = args.input {
@@ -84,14 +88,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             verbose_ffmpeg: args.verbose_ffmpeg,
         };
 
-        let out = aether_renderer_core::render(cfg)?;
-        if args.verbose {
-            println!("Rendered to {}", out);
-        }
-        return Ok(());
+        return match aether_renderer_core::render(cfg) {
+            Ok(report) => {
+                get_render_report(report, args.verbose);
+                Ok(())
+            }
+            Err(e) => Err(e.into()),
+        };
     }
 
     Args::command().print_help()?;
     println!();
     Err("No input provided".into())
+}
+
+fn get_render_report(report: RenderReport, verbose: bool) {
+    println!(
+        "✅ {}",
+        report.notes.as_deref().unwrap_or("Render complete.")
+    );
+
+    if verbose {
+        println!("{}", report.summary());
+    }
 }
