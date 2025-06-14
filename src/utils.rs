@@ -4,6 +4,11 @@ use std::process::{Command, ExitStatus};
 use tempfile::tempdir;
 use zip::ZipArchive;
 
+fn is_valid_image(file_name: &str) -> bool {
+    let name = file_name.to_lowercase();
+    name.ends_with(".png") && !name.starts_with("._")
+}
+
 /// Extracts `frame_*.png` from a ZIP into a temporary folder and returns the
 /// folder path along with the temp directory guard.
 pub fn unzip_frames(
@@ -26,7 +31,7 @@ pub fn unzip_frames(
             .map_err(|e| format!("❌ Failed to access file in zip at index {}: {}", i, e))?;
 
         let filename = file.name().rsplit('/').next().unwrap_or("");
-        if !filename.ends_with(".png") {
+        if !is_valid_image(filename) {
             continue;
         }
 
@@ -78,7 +83,7 @@ pub fn count_pngs_in_zip(zip_path: &Path) -> Result<usize, Box<dyn std::error::E
     for i in 0..archive.len() {
         let file = archive.by_index(i)?;
         let filename = file.name().rsplit('/').next().unwrap_or("");
-        if filename.ends_with(".png") {
+        if is_valid_image(filename) {
             count += 1;
         }
     }
@@ -99,7 +104,7 @@ pub fn extract_frame_from_zip(
     for i in 0..archive.len() {
         let f = archive.by_index(i)?;
         let name = f.name().rsplit('/').next().unwrap_or("");
-        if name.ends_with(".png") {
+        if is_valid_image(name) {
             png_indices.push(i);
         }
     }

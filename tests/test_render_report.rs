@@ -55,7 +55,6 @@ fn test_render_video_from_folder() {
 }
 
 #[test]
-#[ignore]
 fn test_render_gif_from_zip() {
     let input = PathBuf::from("tests/testdata/two-frames.zip");
     let output = "tests/output/test.gif";
