@@ -426,7 +426,7 @@ Download installer from release page: [https://github.com/madspaaskesen/aether-r
 
 🌸 Powered by [Rust Lang](https://www.rust-lang.org/), [Rust getting started](https://www.rust-lang.org/learn/get-started)
 
-[![mySiteChart](https://badges.mysitechart.com/github/aether-renderer-core)](https://mysitechart.com/In?github=aether-renderer-core)
+[![mySiteChart](https://badges.mysitechart.com/github-project/madspaaskesen/aether-renderer-core?site=COM)](https://mysitechart.com/In?github-project=madspaaskesen%2Faether-renderer-core)
 
 Aether Renderer Core is the sacred heart of a lightweight animation rendering toolkit.
 Converts frame sequences to video with love, transparency, and full creative control.
