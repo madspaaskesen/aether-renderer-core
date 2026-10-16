@@ -77,9 +77,11 @@ fn test_unsupported_format2() {
 
 #[test]
 fn test_unsupported_format3() {
+    // Render into a temp folder, not the repository.
+    let tmp = tempfile::tempdir().unwrap();
     let cfg = RenderConfig {
-        input: PathBuf::from("tests/testdata/two-frames.zip"), // this can be mocked or skipped during dry run
-        output: "out.avi".into(),                              // semi invalid!
+        input: PathBuf::from("tests/testdata/two-frames.zip"),
+        output: tmp.path().join("out.avi").to_string_lossy().into_owned(), // semi invalid!
         fps: 30,
         format: "webm".into(),
         fade_in: 0.0,

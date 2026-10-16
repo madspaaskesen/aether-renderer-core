@@ -29,10 +29,16 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
         return Err("❌ Output path cannot be empty.".into());
     }
 
-    match args.format.as_str() {
-        "webm" | "mp4" | "gif" => Ok::<(), String>(()),
-        _ => Err("Unsupported format".into()),
-    }?;
+    if !config::FORMATS.contains(&args.format.as_str()) {
+        return Err(format!(
+            "❌ Unsupported format '{}'. Use one of: {}.",
+            args.format,
+            config::FORMATS.join(", ")
+        ));
+    }
+    if args.fps == 0 {
+        return Err("❌ fps must be greater than 0.".into());
+    }
 
     // Is this a preview render?
     if args.is_preview() {
@@ -48,7 +54,8 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
         preview_frame(
             &args.input,
             args.file_pattern.clone(),
-            args.preview_frame_limit(),
+            args.preview_frame_limit()
+                .filter(|&n| n != config::PREVIEW_MIDDLE),
             &out_path,
             args.verbose,
         )?;
@@ -65,17 +72,13 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
     if args.verbose_ffmpeg {
         println!("🔍 Checking for ffmpeg...");
     }
-    match {
-        let mut cmd = Command::new("ffmpeg");
-        cmd.arg("-version");
-
-        if !args.verbose_ffmpeg {
-            cmd.stdout(std::process::Stdio::null());
-            cmd.stderr(std::process::Stdio::null());
-        }
-
-        cmd.status()
-    } {
+    let mut ffmpeg_check = Command::new("ffmpeg");
+    ffmpeg_check.arg("-version");
+    if !args.verbose_ffmpeg {
+        ffmpeg_check.stdout(std::process::Stdio::null());
+        ffmpeg_check.stderr(std::process::Stdio::null());
+    }
+    match ffmpeg_check.status() {
         Ok(s) if s.success() => {}
         Ok(_) => {
             return Err("❌ ffmpeg failed to run correctly.".into());
@@ -83,7 +86,9 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
                 return Err(
-                    "❌ ffmpeg not found. Please install ffmpeg and ensure it is in your PATH."
+                    "❌ ffmpeg not found. Install it and make sure it is on your PATH:\n   \
+                     macOS: brew install ffmpeg · Ubuntu/Debian: sudo apt install ffmpeg · \
+                     Windows: winget install Gyan.FFmpeg"
                         .into(),
                 );
             } else {
@@ -120,10 +125,6 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
         .map_err(|e| format!("❌ Failed to read frames: {}", e))?;
     let frame_count = frames.len() as u32;
 
-    // Use the provided file pattern when building the ffmpeg input string
-    let input_pattern = working_input_path.join(&pattern);
-    let input_str = input_pattern.to_str().unwrap();
-
     if frame_count == 0 {
         return Err(format!(
             "❌ No input files found in '{}' matching pattern '{}'.",
@@ -132,24 +133,23 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
         ));
     }
 
-    let duration = frame_count as f32 / args.fps as f32;
+    // A numbered copy (links) of exactly these frames, readable by ffmpeg on every OS.
+    let sequence = input::FrameSequence::new(&frames)
+        .map_err(|e| format!("❌ Failed to prepare frames: {}", e))?;
+    let input_str = sequence.pattern().to_string_lossy().into_owned();
 
-    let mut fade_filter = String::new();
-    if args.fade_in > 0.0 {
-        fade_filter.push_str(&format!("fade=t=in:st=0:d={}", args.fade_in));
-    }
-    if args.fade_out > 0.0 {
-        if !fade_filter.is_empty() {
-            fade_filter.push(',');
-        }
-        let start = (duration - args.fade_out).max(0.0);
-        fade_filter.push_str(&format!("fade=t=out:st={}:d={}", start, args.fade_out));
-    }
+    let duration = frame_count as f32 / args.fps as f32;
+    let fade_filter = fade_filter(&args, duration);
 
     if args.verbose {
         println!(
-            "🌿 Rendering {} → {} at {} FPS...",
-            input_str, args.output, args.fps
+            "🌿 Rendering {} frames from {} → {} ({}, {} fps, {:.2} s)...",
+            frame_count,
+            working_input_path.display(),
+            args.output,
+            args.format,
+            args.fps,
+            duration
         );
     }
 
@@ -160,7 +160,6 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
                 "{spinner:.green} 🌿 Rendering with FFmpeg... {elapsed_precise}",
             )
             .unwrap()
-            //.tick_chars("⠁⠃⠇⠧⠷⠿⠻⠹⠸⠰⠠   ⠟⠏⠛⠋  ⠻⠯⠷⠾⠽"),
             .tick_chars("䷀䷫䷌䷅䷤䷥䷄䷍䷪"),
         );
         pb.enable_steady_tick(Duration::from_millis(120));
@@ -169,9 +168,9 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
         None
     };
 
-    let mut render_report = if args.format == "gif" {
+    let result = if args.format == "gif" {
         ffmpeg::gif::render_gif(
-            input_str,
+            &input_str,
             &args.output,
             args.fps,
             Some(&fade_filter),
@@ -179,7 +178,7 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
         )
     } else {
         ffmpeg::video::render_video(
-            input_str,
+            &input_str,
             &args.output,
             args.fps,
             &args.format,
@@ -188,7 +187,11 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
             Some(&fade_filter),
             args.verbose_ffmpeg,
         )
-    }?;
+    };
+    if let Some(pb) = &maybe_spinner {
+        pb.finish_and_clear();
+    }
+    let mut render_report = result?;
 
     // Post-inject known input frame count after rendering
     render_report.frames_rendered = Some(frame_count as usize);
@@ -199,6 +202,7 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
             "webm" => "webm",
             "mp4" => "mp4",
             "gif" => "gif",
+            "mov" => "mov",
             _ => "",
         };
 
@@ -212,16 +216,31 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
         }
     }
 
-    if let Some(pb) = &maybe_spinner {
-        pb.finish_with_message("✅ FFmpeg rendering complete!");
-    }
-
     if args.open {
         if let Err(e) = utils::open_output(&args.output) {
             eprintln!("⚠️ Failed to open video preview: {}", e);
         }
     }
     Ok(render_report)
+}
+
+/// The `fade` filters for the configured fade in/out. Formats with transparency
+/// fade the alpha channel, so a transparent animation fades to transparent
+/// instead of to black.
+fn fade_filter(args: &RenderConfig, duration: f32) -> String {
+    let alpha = if args.format == "mp4" { "" } else { ":alpha=1" };
+    let mut fades = Vec::new();
+    if args.fade_in > 0.0 {
+        fades.push(format!("fade=t=in:st=0:d={}{}", args.fade_in, alpha));
+    }
+    if args.fade_out > 0.0 {
+        let start = (duration - args.fade_out).max(0.0);
+        fades.push(format!(
+            "fade=t=out:st={}:d={}{}",
+            start, args.fade_out, alpha
+        ));
+    }
+    fades.join(",")
 }
 
 /// Extract a single frame from an input folder or ZIP archive
@@ -239,42 +258,32 @@ pub fn preview_frame(
         ));
     }
 
-    if input.extension().map(|ext| ext == "zip").unwrap_or(false) {
-        let count = utils::count_pngs_in_zip(input).map_err(|e| e.to_string())?;
-        if count == 0 {
-            return Err("❌ No PNG files found in zip archive".into());
-        }
-        let idx = frame_index.unwrap_or(count / 2);
-        if idx >= count {
-            return Err(format!(
-                "❌ Frame index {} out of range (0..{})",
-                idx,
-                count - 1
-            ));
-        }
-        utils::extract_frame_from_zip(input, idx, output).map_err(|e| e.to_string())?;
+    // Zips are unpacked so frames are picked in the same (natural) order as a render.
+    let (folder, _temp_guard) = if input.extension().is_some_and(|ext| ext == "zip") {
+        let (path, guard) = utils::unzip_frames(input, verbose).map_err(|e| e.to_string())?;
+        (path, Some(guard))
     } else {
-        let pattern = file_pattern.clone().unwrap_or_else(|| "*.png".to_string());
-        let frames = input::collect_input_frames(input, Some(pattern.clone()))
-            .map_err(|e| format!("❌ Failed to read frames: {}", e))?;
-        if frames.is_empty() {
-            return Err(format!(
-                "❌ No input files found in '{}' matching pattern '{}'",
-                input.display(),
-                pattern
-            ));
-        }
-        let idx = frame_index.unwrap_or(frames.len() / 2);
-        if idx >= frames.len() {
-            return Err(format!(
-                "❌ Frame index {} out of range (0..{})",
-                idx,
-                frames.len() - 1
-            ));
-        }
-        std::fs::copy(&frames[idx], output)
-            .map_err(|e| format!("❌ Failed to copy frame: {}", e))?;
+        (input.to_path_buf(), None)
+    };
+    let pattern = file_pattern.unwrap_or_else(|| "*.png".to_string());
+    let frames = input::collect_input_frames(&folder, Some(pattern.clone()))
+        .map_err(|e| format!("❌ Failed to read frames: {}", e))?;
+    if frames.is_empty() {
+        return Err(format!(
+            "❌ No input files found in '{}' matching pattern '{}'",
+            input.display(),
+            pattern
+        ));
     }
+    let idx = frame_index.unwrap_or(frames.len() / 2);
+    if idx >= frames.len() {
+        return Err(format!(
+            "❌ Frame index {} out of range (0..{})",
+            idx,
+            frames.len() - 1
+        ));
+    }
+    std::fs::copy(&frames[idx], output).map_err(|e| format!("❌ Failed to copy frame: {}", e))?;
 
     if verbose {
         println!("🖼️ Preview saved to: {}", output.display());

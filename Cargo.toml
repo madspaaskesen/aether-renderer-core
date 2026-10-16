@@ -1,11 +1,13 @@
 [package]
 name = "aether-renderer-core"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
-description = "A sacred Rust-based CLI for rendering transparent WebM/MP4/GIF from PNG sequences"
+description = "Render PNG image sequences to transparent WebM (VP9), ProRes 4444 MOV, GIF or MP4 with ffmpeg"
 license = "MIT"
 authors = ["Mads Paaskesen <madspaaskesen@gmail.com>"]
-homepage = "https://sacred-ai.com/about/aetherrenderer"
+homepage = "https://mp-it.dk/projects/aether-renderer"
+keywords = ["ffmpeg", "webm", "transparent", "png-sequence", "animation"]
+categories = ["command-line-utilities", "multimedia::video", "multimedia::images"]
 repository = "https://github.com/madspaaskesen/aether-renderer-core"
 readme = "README.md"
 documentation = "https://docs.rs/aether-renderer-core"
@@ -13,6 +15,7 @@ include = [
     "src/**",
     "Cargo.toml",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
 ]
 exclude = [
@@ -33,9 +36,10 @@ path = "src/lib.rs"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
-zip = "0.6"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 tempfile = "3.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 glob = "0.3"
 indicatif = "0.17"
+toml = "0.8"
