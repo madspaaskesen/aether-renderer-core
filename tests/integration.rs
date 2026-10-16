@@ -54,17 +54,11 @@ fn cli_renders_webm() -> Result<(), Box<dyn std::error::Error>> {
         out_file.to_str().unwrap()
     )?;
 
-    let status = Command::new("cargo")
-        .args([
-            "run",
-            "--quiet",
-            "--",
-            "--config",
-            config_path.to_str().unwrap(),
-        ])
+    let status = Command::new(env!("CARGO_BIN_EXE_aether-renderer-core"))
+        .args(["--config", config_path.to_str().unwrap()])
         .status()?;
 
-    assert!(status.success(), "cargo run failed");
+    assert!(status.success(), "render failed");
     assert!(out_file.exists(), "output file was not created");
     let meta = fs::metadata(&out_file)?;
     assert!(meta.len() > 0, "output file is empty");
@@ -98,17 +92,11 @@ fn cli_renders_mp4() -> Result<(), Box<dyn std::error::Error>> {
         out_file.to_str().unwrap()
     )?;
 
-    let status = Command::new("cargo")
-        .args([
-            "run",
-            "--quiet",
-            "--",
-            "--config",
-            config_path.to_str().unwrap(),
-        ])
+    let status = Command::new(env!("CARGO_BIN_EXE_aether-renderer-core"))
+        .args(["--config", config_path.to_str().unwrap()])
         .status()?;
 
-    assert!(status.success(), "cargo run failed");
+    assert!(status.success(), "render failed");
     assert!(out_file.exists(), "output file was not created");
     let meta = fs::metadata(&out_file)?;
     assert!(meta.len() > 0, "output file is empty");
@@ -133,14 +121,8 @@ fn cli_errors_on_invalid_zip() -> Result<(), Box<dyn std::error::Error>> {
         zip_path.display()
     )?;
 
-    let status = Command::new("cargo")
-        .args([
-            "run",
-            "--quiet",
-            "--",
-            "--config",
-            config_path.to_str().unwrap(),
-        ])
+    let status = Command::new(env!("CARGO_BIN_EXE_aether-renderer-core"))
+        .args(["--config", config_path.to_str().unwrap()])
         .status()?;
 
     assert!(!status.success(), "expected failure for invalid zip input");
@@ -161,14 +143,8 @@ fn cli_errors_on_missing_folder() -> Result<(), Box<dyn std::error::Error>> {
         missing.display()
     )?;
 
-    let status = Command::new("cargo")
-        .args([
-            "run",
-            "--quiet",
-            "--",
-            "--config",
-            config_path.to_str().unwrap(),
-        ])
+    let status = Command::new(env!("CARGO_BIN_EXE_aether-renderer-core"))
+        .args(["--config", config_path.to_str().unwrap()])
         .status()?;
 
     assert!(
@@ -189,14 +165,8 @@ fn cli_errors_on_empty_folder() -> Result<(), Box<dyn std::error::Error>> {
         tmp.path().display()
     )?;
 
-    let status = Command::new("cargo")
-        .args([
-            "run",
-            "--quiet",
-            "--",
-            "--config",
-            config_path.to_str().unwrap(),
-        ])
+    let status = Command::new(env!("CARGO_BIN_EXE_aether-renderer-core"))
+        .args(["--config", config_path.to_str().unwrap()])
         .status()?;
 
     assert!(!status.success(), "expected failure for empty input folder");
@@ -211,11 +181,8 @@ fn cli_preview_from_zip() -> Result<(), Box<dyn std::error::Error>> {
     let tmp = tempdir()?;
     let out_file = tmp.path().join("prev.png");
 
-    let status = Command::new("cargo")
+    let status = Command::new(env!("CARGO_BIN_EXE_aether-renderer-core"))
         .args([
-            "run",
-            "--quiet",
-            "--",
             "--input",
             zip_path.to_str().unwrap(),
             "--output",
@@ -225,7 +192,7 @@ fn cli_preview_from_zip() -> Result<(), Box<dyn std::error::Error>> {
         ])
         .status()?;
 
-    assert!(status.success(), "cargo run failed");
+    assert!(status.success(), "render failed");
     assert!(out_file.exists(), "preview image not created");
     Ok(())
 }

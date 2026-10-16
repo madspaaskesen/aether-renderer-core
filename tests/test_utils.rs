@@ -7,7 +7,7 @@ fn test_scan_ffmpeg_stderr_detects_warnings() {
 [Parsed_fps_0 @ 0x7fd660001c40] Frame rate very high for a muxer not efficiently supporting it.
 [Parsed_scale_0 @ 0x7fd660001b40] deprecated option 'flags' used
 \"";
-    let warnings = scan_ffmpeg_stderr(&fake_stderr);
+    let warnings = scan_ffmpeg_stderr(fake_stderr);
 
     assert!(warnings.iter().any(|w| w.contains("Past frame duration")));
     assert!(warnings.iter().any(|w| w.contains("Frame rate very high")));
