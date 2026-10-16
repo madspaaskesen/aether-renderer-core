@@ -47,12 +47,14 @@ fn cli_renders_webm() -> Result<(), Box<dyn std::error::Error>> {
     let out_file = tmp.path().join("out.webm");
     let config_path = tmp.path().join("config.json");
     let mut f = File::create(&config_path)?;
-    writeln!(
-        f,
-        "{{\"input\":\"{}\",\"output\":\"{}\",\"fps\":30,\"format\":\"webm\"}}",
-        tmp.path().display(),
-        out_file.to_str().unwrap()
-    )?;
+    // serde_json escapes Windows paths (C:\\Users\\...) correctly; format! did not.
+    let config = serde_json::json!({
+        "input": tmp.path().to_string_lossy(),
+        "output": out_file.to_string_lossy(),
+        "fps": 30,
+        "format": "webm"
+    });
+    write!(f, "{config}")?;
 
     let status = Command::new(env!("CARGO_BIN_EXE_aether-renderer-core"))
         .args(["--config", config_path.to_str().unwrap()])
@@ -85,12 +87,14 @@ fn cli_renders_mp4() -> Result<(), Box<dyn std::error::Error>> {
     let out_file = tmp.path().join("out.mp4");
     let config_path = tmp.path().join("config.json");
     let mut f = File::create(&config_path)?;
-    writeln!(
-        f,
-        "{{\"input\":\"{}\",\"output\":\"{}\",\"fps\":30,\"format\":\"mp4\"}}",
-        tmp.path().display(),
-        out_file.to_str().unwrap()
-    )?;
+    // serde_json escapes Windows paths (C:\\Users\\...) correctly; format! did not.
+    let config = serde_json::json!({
+        "input": tmp.path().to_string_lossy(),
+        "output": out_file.to_string_lossy(),
+        "fps": 30,
+        "format": "mp4"
+    });
+    write!(f, "{config}")?;
 
     let status = Command::new(env!("CARGO_BIN_EXE_aether-renderer-core"))
         .args(["--config", config_path.to_str().unwrap()])
@@ -115,11 +119,14 @@ fn cli_errors_on_invalid_zip() -> Result<(), Box<dyn std::error::Error>> {
     let tmp_dir = tempdir()?;
     let config_path = tmp_dir.path().join("config.json");
     let mut f = File::create(&config_path)?;
-    writeln!(
-        f,
-        "{{\"input\":\"{}\",\"output\":\"out.webm\",\"fps\":30,\"format\":\"webm\"}}",
-        zip_path.display()
-    )?;
+    // serde_json escapes Windows paths (C:\\Users\\...) correctly; format! did not.
+    let config = serde_json::json!({
+        "input": zip_path.to_string_lossy(),
+        "output": "out.webm",
+        "fps": 30,
+        "format": "webm"
+    });
+    write!(f, "{config}")?;
 
     let status = Command::new(env!("CARGO_BIN_EXE_aether-renderer-core"))
         .args(["--config", config_path.to_str().unwrap()])
@@ -137,11 +144,12 @@ fn cli_errors_on_missing_folder() -> Result<(), Box<dyn std::error::Error>> {
     let tmp = tempdir()?;
     let config_path = tmp.path().join("config.json");
     let mut f = File::create(&config_path)?;
-    writeln!(
-        f,
-        "{{\"input\":\"{}\",\"output\":\"out.webm\"}}",
-        missing.display()
-    )?;
+    // serde_json escapes Windows paths (C:\\Users\\...) correctly; format! did not.
+    let config = serde_json::json!({
+        "input": missing.to_string_lossy(),
+        "output": "out.webm"
+    });
+    write!(f, "{config}")?;
 
     let status = Command::new(env!("CARGO_BIN_EXE_aether-renderer-core"))
         .args(["--config", config_path.to_str().unwrap()])
@@ -159,11 +167,12 @@ fn cli_errors_on_empty_folder() -> Result<(), Box<dyn std::error::Error>> {
     let tmp = tempdir()?;
     let config_path = tmp.path().join("config.json");
     let mut f = File::create(&config_path)?;
-    writeln!(
-        f,
-        "{{\"input\":\"{}\",\"output\":\"out.webm\"}}",
-        tmp.path().display()
-    )?;
+    // serde_json escapes Windows paths (C:\\Users\\...) correctly; format! did not.
+    let config = serde_json::json!({
+        "input": tmp.path().to_string_lossy(),
+        "output": "out.webm"
+    });
+    write!(f, "{config}")?;
 
     let status = Command::new(env!("CARGO_BIN_EXE_aether-renderer-core"))
         .args(["--config", config_path.to_str().unwrap()])

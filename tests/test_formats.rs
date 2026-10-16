@@ -72,7 +72,9 @@ fn probe(file: &Path) -> String {
         .arg(file)
         .output()
         .unwrap();
-    String::from_utf8_lossy(&out.stdout).replace('\n', ",")
+    // .lines() also strips the \r of Windows line endings.
+    let text = String::from_utf8_lossy(&out.stdout);
+    text.lines().map(|l| format!("{l},")).collect()
 }
 
 /// Alpha of the corner and center pixel of frame `n`.
