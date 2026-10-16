@@ -1,113 +1,137 @@
+use aether_renderer_core::config::PartialConfig;
 use aether_renderer_core::RenderReport;
 use clap::{CommandFactory, Parser};
 use std::path::PathBuf;
 
-/// 🌸 Aether Renderer Core
+/// 🪼 Aether Renderer Core: render PNG sequences to transparent WebM, MOV, GIF or MP4.
+///
+/// Every option can also be set in a JSON or TOML file passed with --config;
+/// options given on the command line override the file.
 #[derive(Parser, Debug)]
-#[command(name = "aether-renderer")]
-#[command(about = "Render using configuration file or inline options", long_about = None)]
+#[command(name = "aether-renderer-core", version, about, long_about = None)]
+#[command(after_help = "Examples:\n  \
+    aether-renderer-core -i frames/ -o out.webm\n  \
+    aether-renderer-core -i frames.zip -o out.gif --fps 24\n  \
+    aether-renderer-core -i frames/ -o out.mov            (ProRes 4444 with alpha, for video editors)\n  \
+    aether-renderer-core --config render.toml --fps 60 -o draft.webm")]
 struct Args {
-    /// Path to render configuration JSON
+    /// Config file (.json or .toml); command-line options override its values
     #[arg(short, long)]
     config: Option<PathBuf>,
 
-    /// Input frames folder or ZIP
+    /// Folder or .zip with the frames
     #[arg(short, long)]
     input: Option<PathBuf>,
 
-    /// Output video path
+    /// Output file [default: output.<format>]
     #[arg(short, long)]
-    output: Option<PathBuf>,
+    output: Option<String>,
 
-    /// Optional file pattern (e.g. *.png)
+    /// Which files to use, e.g. '*.png', 'scene1_*.png' or 'frame_%04d.png' [default: *.png]
     #[arg(long)]
     file_pattern: Option<String>,
 
-    /// Optional fps override
+    /// Frames per second [default: 30]
     #[arg(long)]
     fps: Option<u32>,
 
-    /// Optional format (e.g. webm, gif)
-    #[arg(long)]
+    /// Output format [default: from the output extension, else webm]
+    #[arg(long, value_parser = ["webm", "mp4", "gif", "mov"])]
     format: Option<String>,
 
-    /// Output video preview after rendering
-    #[arg(long, default_value_t = false)]
+    /// Fade in over the first N seconds (fades transparency for webm/mov/gif)
+    #[arg(long, value_name = "SECONDS")]
+    fade_in: Option<f32>,
+
+    /// Fade out over the last N seconds
+    #[arg(long, value_name = "SECONDS")]
+    fade_out: Option<f32>,
+
+    /// Target bitrate, e.g. 2M or 2500k (webm/mp4)
+    #[arg(long)]
+    bitrate: Option<String>,
+
+    /// Constant quality, lower is better (webm: 0-63, default 30; mp4: 0-51, default 23)
+    #[arg(long)]
+    crf: Option<u32>,
+
+    /// Open the result when done
+    #[arg(long)]
     open: bool,
 
-    /// Extract a single frame instead of full render
-    #[arg(long, num_args = 0..=1, value_name = "N", value_parser = clap::value_parser!(u32))]
-    preview: Option<Option<u32>>,
+    /// Save a single frame as PNG instead of rendering (default: the middle frame)
+    #[arg(long, num_args = 0..=1, value_name = "N")]
+    preview: Option<Option<usize>>,
 
-    /// Enable verbose logging
-    #[arg(long)]
+    /// Print details and a progress spinner
+    #[arg(short, long)]
     verbose: bool,
 
-    /// Show full ffmpeg logs
+    /// Show ffmpeg's own output
     #[arg(long)]
     verbose_ffmpeg: bool,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::parse();
-
-    if let Some(config) = args.config {
-        if args.verbose {
-            println!("Loading config from {}", config.display());
+impl Args {
+    /// What was given on the command line. Flags only count when set, so a config
+    /// file's `"verbose": true` is not switched off by leaving out `--verbose`.
+    fn overrides(&self) -> PartialConfig {
+        PartialConfig {
+            input: self.input.clone(),
+            output: self.output.clone(),
+            fps: self.fps,
+            format: self.format.clone(),
+            fade_in: self.fade_in,
+            fade_out: self.fade_out,
+            bitrate: self.bitrate.clone(),
+            crf: self.crf,
+            open: self.open.then_some(true),
+            preview: self.preview,
+            file_pattern: self.file_pattern.clone(),
+            verbose: self.verbose.then_some(true),
+            verbose_ffmpeg: self.verbose_ffmpeg.then_some(true),
         }
-
-        return match aether_renderer_core::render_from_config(config.to_str().unwrap()) {
-            Ok(report) => {
-                get_render_report(report, args.verbose);
-                Ok(())
-            }
-            Err(e) => Err(e.into()),
-        };
     }
-
-    if let Some(input) = args.input {
-        let output = args.output.unwrap_or_else(|| PathBuf::from("output.webm"));
-
-        if args.verbose {
-            println!("Rendering from CLI arguments");
-        }
-
-        let cfg = aether_renderer_core::RenderConfig {
-            input,
-            output: output.to_string_lossy().into_owned(),
-            fps: args.fps.unwrap_or(30),
-            format: args.format.unwrap_or_else(|| "webm".into()),
-            fade_in: 0.0, // or add to Args if needed
-            fade_out: 0.0,
-            bitrate: None,
-            crf: None,
-            open: args.open,
-            preview: args.preview.flatten().map(|n| n as usize),
-            file_pattern: args.file_pattern,
-            verbose: args.verbose,
-            verbose_ffmpeg: args.verbose_ffmpeg,
-        };
-
-        return match aether_renderer_core::render(cfg) {
-            Ok(report) => {
-                get_render_report(report, args.verbose);
-                Ok(())
-            }
-            Err(e) => Err(e.into()),
-        };
-    }
-
-    Args::command().print_help()?;
-    println!();
-    Err("No input provided".into())
 }
 
-fn get_render_report(report: RenderReport, verbose: bool) {
-    println!(
-        "✅ {}",
-        report.notes.as_deref().unwrap_or("Render complete.")
-    );
+fn main() {
+    let args = Args::parse();
 
+    if args.config.is_none() && args.input.is_none() {
+        let _ = Args::command().print_help();
+        eprintln!("\n❌ Nothing to render: pass --input <folder or .zip> or --config <file>.");
+        std::process::exit(2);
+    }
+
+    if let Err(e) = run(&args) {
+        eprintln!("{e}");
+        std::process::exit(1);
+    }
+}
+
+fn run(args: &Args) -> Result<(), String> {
+    let file = match &args.config {
+        Some(path) => {
+            if args.verbose {
+                println!("Loading config from {}", path.display());
+            }
+            PartialConfig::from_file(&path.to_string_lossy())?
+        }
+        None => PartialConfig::default(),
+    };
+    let cfg = args.overrides().or(file).into_config()?;
+    let verbose = cfg.verbose;
+    let report = aether_renderer_core::render(cfg)?;
+    print_report(&report, verbose);
+    Ok(())
+}
+
+fn print_report(report: &RenderReport, verbose: bool) {
+    println!(
+        "✅ {} → {}",
+        report.notes.as_deref().unwrap_or("Render complete."),
+        report.output_path.display()
+    );
     if verbose {
         println!("{}", report.summary());
     }

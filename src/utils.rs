@@ -30,7 +30,7 @@ pub fn unzip_frames(
             .by_index(i)
             .map_err(|e| format!("❌ Failed to access file in zip at index {}: {}", i, e))?;
 
-        let filename = file.name().rsplit('/').next().unwrap_or("");
+        let filename = file.name().rsplit(['/', '\\']).next().unwrap_or("");
         if !is_valid_image(filename) {
             continue;
         }
@@ -82,7 +82,7 @@ pub fn count_pngs_in_zip(zip_path: &Path) -> Result<usize, Box<dyn std::error::E
     let mut count = 0usize;
     for i in 0..archive.len() {
         let file = archive.by_index(i)?;
-        let filename = file.name().rsplit('/').next().unwrap_or("");
+        let filename = file.name().rsplit(['/', '\\']).next().unwrap_or("");
         if is_valid_image(filename) {
             count += 1;
         }
@@ -103,7 +103,7 @@ pub fn extract_frame_from_zip(
     let mut png_indices = Vec::new();
     for i in 0..archive.len() {
         let f = archive.by_index(i)?;
-        let name = f.name().rsplit('/').next().unwrap_or("");
+        let name = f.name().rsplit(['/', '\\']).next().unwrap_or("");
         if is_valid_image(name) {
             png_indices.push(i);
         }
@@ -207,6 +207,20 @@ pub fn scan_ffmpeg_stderr(stderr: &str) -> Vec<String> {
     warnings
 }
 
+/// Arguments every ffmpeg call starts with: no banner, and only warnings unless
+/// `verbose_ffmpeg` is set.
+pub fn ffmpeg_base_args(verbose_ffmpeg: bool) -> Vec<String> {
+    let level = if verbose_ffmpeg { "info" } else { "warning" };
+    vec![
+        "-hide_banner".into(),
+        "-nostdin".into(),
+        "-loglevel".into(),
+        level.into(),
+    ]
+}
+
+/// Run ffmpeg and return its stderr. On failure the error includes the last lines
+/// ffmpeg printed, which usually say what went wrong.
 pub fn run_ffmpeg_with_output(args: &[String]) -> Result<(ExitStatus, String), String> {
     let output = Command::new("ffmpeg").args(args).output().map_err(|e| {
         if e.kind() == std::io::ErrorKind::NotFound {
@@ -216,15 +230,40 @@ pub fn run_ffmpeg_with_output(args: &[String]) -> Result<(ExitStatus, String), S
         }
     })?;
 
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
     if !output.status.success() {
-        return Err(format!(
+        let mut msg = format!(
             "❌ ffmpeg exited with code {}",
             output.status.code().unwrap_or(-1)
-        ));
+        );
+        let tail: Vec<&str> = stderr
+            .lines()
+            .map(str::trim)
+            .filter(|l| !l.is_empty())
+            .collect();
+        if !tail.is_empty() {
+            msg.push_str(":\n");
+            for line in &tail[tail.len().saturating_sub(8)..] {
+                msg.push_str("   ");
+                msg.push_str(line);
+                msg.push('\n');
+            }
+            msg.push_str("   (run with --verbose-ffmpeg for the full log)");
+        }
+        return Err(msg);
     }
-
-    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
     Ok((output.status, stderr))
+}
+
+/// Like [`run_ffmpeg_with_output`], but removes a half-written `output` file if ffmpeg fails.
+pub fn run_ffmpeg_for_output(args: &[String], output: &str) -> Result<String, String> {
+    match run_ffmpeg_with_output(args) {
+        Ok((_, stderr)) => Ok(stderr),
+        Err(e) => {
+            let _ = std::fs::remove_file(output);
+            Err(e)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -234,14 +273,14 @@ mod tests {
     use std::io::Write;
     use std::path::Path;
     use tempfile::tempdir;
-    use zip::write::{FileOptions, ZipWriter};
+    use zip::write::{SimpleFileOptions, ZipWriter};
     use zip::CompressionMethod;
 
     // Helper to create a small zip containing two fake PNG files
     fn create_test_zip(path: &Path) -> zip::result::ZipResult<()> {
         let file = File::create(path)?;
         let mut zip = ZipWriter::new(file);
-        let options = FileOptions::default().compression_method(CompressionMethod::Stored);
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
 
         zip.start_file("frame_0000.png", options)?;
         zip.write_all(b"png0")?;
