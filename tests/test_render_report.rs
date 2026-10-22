@@ -44,6 +44,7 @@ fn test_render_video_from_folder() {
         file_pattern: Some("*.png".into()),
         verbose: false,
         verbose_ffmpeg: false,
+        background: None,
     };
 
     let report = render(cfg).expect("Render should succeed");
@@ -73,6 +74,7 @@ fn test_render_gif_from_zip() {
         file_pattern: None,
         verbose: false,
         verbose_ffmpeg: false,
+        background: None,
     };
 
     let report = render(cfg).expect("GIF render should succeed");

@@ -35,6 +35,11 @@ pub struct RenderConfig {
     pub verbose: bool,
     #[serde(default)]
     pub verbose_ffmpeg: bool,
+    /// Solid background color behind the frames, e.g. `"#1e1e1e"` or `"white"`.
+    /// `None` (or `"transparent"`) keeps transparency; mp4 cannot store it and
+    /// uses black. See [`parse_background`].
+    #[serde(default)]
+    pub background: Option<String>,
 }
 
 fn default_fps() -> u32 {
@@ -89,6 +94,7 @@ pub struct PartialConfig {
     pub file_pattern: Option<String>,
     pub verbose: Option<bool>,
     pub verbose_ffmpeg: Option<bool>,
+    pub background: Option<String>,
 }
 
 impl PartialConfig {
@@ -125,6 +131,7 @@ impl PartialConfig {
             file_pattern: self.file_pattern.or(base.file_pattern),
             verbose: self.verbose.or(base.verbose),
             verbose_ffmpeg: self.verbose_ffmpeg.or(base.verbose_ffmpeg),
+            background: self.background.or(base.background),
         }
     }
 
@@ -161,6 +168,10 @@ impl PartialConfig {
         if fade_in < 0.0 || fade_out < 0.0 {
             return Err("❌ Fade durations cannot be negative.".into());
         }
+        let background = match self.background {
+            Some(b) => parse_background(&b)?,
+            None => None,
+        };
         Ok(RenderConfig {
             input,
             output,
@@ -177,8 +188,42 @@ impl PartialConfig {
             file_pattern: self.file_pattern,
             verbose: self.verbose.unwrap_or(false),
             verbose_ffmpeg: self.verbose_ffmpeg.unwrap_or(false),
+            background,
         })
     }
+}
+
+/// Turn a background color as a user writes it into one ffmpeg understands.
+///
+/// - `""`, `"transparent"`, `"none"` → `None` (keep transparency)
+/// - `"#rgb"`, `"#rrggbb"`, `"rrggbb"`, `"0xrrggbb"` → `Some("0xRRGGBB")`
+/// - a color name such as `"white"` or `"DarkSlateGray"` → `Some("darkslategray")`
+///   (ffmpeg checks the name when rendering)
+pub fn parse_background(value: &str) -> Result<Option<String>, String> {
+    let v = value.trim();
+    if v.is_empty() || v.eq_ignore_ascii_case("transparent") || v.eq_ignore_ascii_case("none") {
+        return Ok(None);
+    }
+    let hex = v
+        .strip_prefix('#')
+        .or_else(|| v.strip_prefix("0x"))
+        .or_else(|| v.strip_prefix("0X"))
+        .unwrap_or(v);
+    let is_hex = hex.chars().all(|c| c.is_ascii_hexdigit());
+    if is_hex && hex.len() == 6 {
+        return Ok(Some(format!("0x{}", hex.to_uppercase())));
+    }
+    if is_hex && hex.len() == 3 {
+        let long: String = hex.chars().flat_map(|c| [c, c]).collect();
+        return Ok(Some(format!("0x{}", long.to_uppercase())));
+    }
+    if hex.len() == v.len() && v.chars().all(|c| c.is_ascii_alphabetic()) {
+        return Ok(Some(v.to_lowercase()));
+    }
+    Err(format!(
+        "❌ Invalid background color '{}'. Use a hex color like '#1e1e1e', a name like 'white', or 'transparent'.",
+        value
+    ))
 }
 
 /// Accepts `"preview": false | true | null | <frame number>` in config files.
@@ -205,4 +250,27 @@ fn preview_option<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Option<usize
         Some(PreviewValue::Flag(true)) => Some(None),
         Some(PreviewValue::Frame(n)) => Some(Some(n)),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_background;
+
+    #[test]
+    fn background_values() {
+        let p = |v: &str| parse_background(v).unwrap();
+        assert_eq!(p(""), None);
+        assert_eq!(p(" transparent "), None);
+        assert_eq!(p("None"), None);
+        assert_eq!(p("#1e1e1e").as_deref(), Some("0x1E1E1E"));
+        assert_eq!(p("1e1e1e").as_deref(), Some("0x1E1E1E"));
+        assert_eq!(p("0xff8800").as_deref(), Some("0xFF8800"));
+        assert_eq!(p("#fff").as_deref(), Some("0xFFFFFF"));
+        assert_eq!(p("White").as_deref(), Some("white"));
+        // "bad" is valid hex but 3 letters: treated as #bbaadd
+        assert_eq!(p("#bad").as_deref(), Some("0xBBAADD"));
+        assert!(parse_background("#12345").is_err());
+        assert!(parse_background("red; rm -rf").is_err());
+        assert!(parse_background("#1e1e1e80").is_err());
+    }
 }

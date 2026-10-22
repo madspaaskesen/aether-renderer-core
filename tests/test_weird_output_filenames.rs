@@ -16,6 +16,7 @@ fn default_config() -> RenderConfig {
         file_pattern: None,
         verbose: false,
         verbose_ffmpeg: false,
+        background: None,
     }
 }
 

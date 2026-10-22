@@ -13,6 +13,8 @@ use std::path::PathBuf;
     aether-renderer-core -i frames/ -o out.webm\n  \
     aether-renderer-core -i frames.zip -o out.gif --fps 24\n  \
     aether-renderer-core -i frames/ -o out.mov            (ProRes 4444 with alpha, for video editors)\n  \
+    aether-renderer-core -i frames/ -o out.mp4 --background '#1e1e1e'\n  \
+    aether-renderer-core -i frames/ -o out.webm --progress json   (one JSON line per update, for other programs)\n  \
     aether-renderer-core --config render.toml --fps 60 -o draft.webm")]
 struct Args {
     /// Config file (.json or .toml); command-line options override its values
@@ -51,6 +53,11 @@ struct Args {
     #[arg(long)]
     bitrate: Option<String>,
 
+    /// Solid background color behind transparent frames, e.g. '#1e1e1e' or 'white'.
+    /// Makes every format opaque. mp4 can't be transparent and uses black without it
+    #[arg(long, value_name = "COLOR")]
+    background: Option<String>,
+
     /// Constant quality, lower is better (webm: 0-63, default 30; mp4: 0-51, default 23)
     #[arg(long)]
     crf: Option<u32>,
@@ -63,9 +70,14 @@ struct Args {
     #[arg(long, num_args = 0..=1, value_name = "N")]
     preview: Option<Option<usize>>,
 
-    /// Print details and a progress spinner
+    /// Print details and a progress bar
     #[arg(short, long)]
     verbose: bool,
+
+    /// Report progress for other programs: 'json' prints one JSON object per line
+    /// on stdout ({"event":"progress",...}, then "done" or "error")
+    #[arg(long, value_name = "FORMAT", value_parser = ["json"])]
+    progress: Option<String>,
 
     /// Show ffmpeg's own output
     #[arg(long)]
@@ -90,6 +102,7 @@ impl Args {
             file_pattern: self.file_pattern.clone(),
             verbose: self.verbose.then_some(true),
             verbose_ffmpeg: self.verbose_ffmpeg.then_some(true),
+            background: self.background.clone(),
         }
     }
 }
@@ -103,13 +116,17 @@ fn main() {
         std::process::exit(2);
     }
 
-    if let Err(e) = run(&args) {
+    let json = args.progress.as_deref() == Some("json");
+    if let Err(e) = run(&args, json) {
+        if json {
+            emit(serde_json::json!({ "event": "error", "message": e }));
+        }
         eprintln!("{e}");
         std::process::exit(1);
     }
 }
 
-fn run(args: &Args) -> Result<(), String> {
+fn run(args: &Args, json: bool) -> Result<(), String> {
     let file = match &args.config {
         Some(path) => {
             if args.verbose {
@@ -121,9 +138,39 @@ fn run(args: &Args) -> Result<(), String> {
     };
     let cfg = args.overrides().or(file).into_config()?;
     let verbose = cfg.verbose;
-    let report = aether_renderer_core::render(cfg)?;
-    print_report(&report, verbose);
+    if !json {
+        let report = aether_renderer_core::render(cfg)?;
+        print_report(&report, verbose);
+        return Ok(());
+    }
+
+    let mut last = None;
+    let report = aether_renderer_core::render_with_progress(cfg, |p| {
+        // Skip repeats (ffmpeg reports the same frame while it waits on input).
+        if last != Some(p.frame) {
+            last = Some(p.frame);
+            let mut line = serde_json::to_value(p).unwrap_or_default();
+            line["event"] = "progress".into();
+            emit(line);
+        }
+    })?;
+    emit(serde_json::json!({
+        "event": "done",
+        "output": report.output_path,
+        "frames": report.frames_rendered,
+        "warnings": report.ffmpeg_warnings,
+        "notes": report.notes,
+    }));
     Ok(())
+}
+
+/// Print one JSON line and flush it right away, so a program reading the pipe
+/// sees it immediately. If the reader has gone away, keep rendering anyway.
+fn emit(value: serde_json::Value) {
+    use std::io::Write;
+    let mut out = std::io::stdout().lock();
+    let _ = writeln!(out, "{value}");
+    let _ = out.flush();
 }
 
 fn print_report(report: &RenderReport, verbose: bool) {

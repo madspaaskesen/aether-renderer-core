@@ -29,7 +29,9 @@ aether-renderer-core -i frames/ -o animation.webm
 - 🫧 **Transparent output** in WebM (VP9), MOV (ProRes 4444) and GIF; MP4 for when you don't need alpha
 - 📦 Frames from a **folder or a ZIP** (macOS `__MACOSX` / `._` files are skipped)
 - 🔢 Frames in **natural order**: `frame_2.png` comes before `frame_10.png`, with or without zero padding
-- 🌗 **Fade in / fade out** that fades to *transparent*, not to black
+- 🌗 **Fade in / fade out** that fades to *transparent* (or to your background color), not to black
+- 🎨 **Background color** (`--background '#1e1e1e'`) to flatten transparency onto a solid color, for any format
+- 📊 **Real progress**: a frame counter with `--verbose`, JSON lines with `--progress json`, and a callback for library users
 - 🎛️ Options on the command line, in a **JSON or TOML config**, or both (the command line wins)
 - 🖼️ **Preview** a single frame without rendering
 - 💻 macOS, Linux and Windows, with prebuilt binaries
@@ -45,6 +47,10 @@ aether-renderer-core -i frames/ -o animation.webm
 | `mp4` | ❌ | Everything else, social media, maximum compatibility |
 
 The format is taken from the output file name (`-o loop.gif` renders a GIF), or set it with `--format`.
+
+MP4 can't store transparency, so transparent areas become black. To match the page
+or video the clip will sit on, give it that color: `--background '#1e1e1e'`. The
+same flag works for every format and makes the output opaque; fades then go to that color.
 
 > Safari does not play transparent WebM. For transparent video on Safari, use a GIF,
 > or serve a HEVC-with-alpha version next to the WebM (on the roadmap).
@@ -103,17 +109,35 @@ aether-renderer-core -i frames/ -o out.webm --preview 12
 | `--format` | from the output extension, else `webm` | `webm`, `mov`, `gif` or `mp4` |
 | `--fps` | `30` | Frames per second |
 | `--file-pattern` | `*.png` | Glob (`scene_*.png`) or numbered sequence (`frame_%04d.png`) |
-| `--fade-in` | `0` | Seconds to fade in from transparent (from black for mp4) |
+| `--background` | transparent (black for mp4) | Solid color behind the frames: `'#1e1e1e'`, `'#fff'`, `white` or `transparent` |
+| `--fade-in` | `0` | Seconds to fade in from transparent (from the background color if set) |
 | `--fade-out` | `0` | Seconds to fade out at the end |
 | `--crf` | webm `30`, mp4 `23` | Constant quality, lower is better (webm 0–63, mp4 0–51) |
 | `--bitrate` | | Target bitrate instead, e.g. `2M` (if both are set, `--crf` wins) |
 | `--preview [N]` | | Save frame `N` (default: the middle frame) as a PNG instead of rendering |
 | `--open` | | Open the result when done |
 | `-c, --config` | | JSON or TOML config file, see below |
-| `-v, --verbose` | | Details and a progress spinner |
+| `-v, --verbose` | | Details and a progress bar |
+| `--progress json` | | One JSON object per line on stdout, for GUIs and scripts (see below) |
 | `--verbose-ffmpeg` | | Show ffmpeg's own output |
 
 If ffmpeg fails, the error shows ffmpeg's own explanation, and no half-written file is left behind.
+
+### Progress for other programs
+
+With `--progress json`, every line on stdout is a JSON object, so a GUI or script
+can draw its own progress bar:
+
+```json
+{"event":"progress","frame":0,"total_frames":360,"percent":0.0}
+{"event":"progress","frame":96,"total_frames":360,"percent":26.67}
+{"event":"progress","frame":360,"total_frames":360,"percent":100.0}
+{"event":"done","output":"out.webm","frames":360,"warnings":[],"notes":"Video render complete."}
+```
+
+On failure the last line is `{"event":"error","message":"..."}` and the exit code is 1.
+Progress comes from ffmpeg about twice a second. GIFs need every frame before they
+can be written, so their progress mostly jumps to 100% at the end.
 
 ### Config files
 
@@ -129,6 +153,7 @@ fps = 24
 fade_in = 0.5
 fade_out = 0.5
 crf = 24
+background = "#1e1e1e"   # optional
 ```
 
 ```bash
@@ -145,7 +170,7 @@ Relative paths are relative to the folder you run the command from.
 
 ```toml
 [dependencies]
-aether-renderer-core = "0.5"
+aether-renderer-core = "0.6"
 ```
 
 ```rust
@@ -161,6 +186,14 @@ let cfg = PartialConfig {
 
 let report = aether_renderer_core::render(cfg)?;
 println!("{}", report.summary());
+```
+
+For a progress bar, use `render_with_progress`:
+
+```rust
+let report = aether_renderer_core::render_with_progress(cfg, |p| {
+    println!("{:.0}% ({}/{} frames)", p.percent, p.frame, p.total_frames);
+})?;
 ```
 
 `RenderConfig::from_file("render.toml")` loads a config file, and
@@ -222,6 +255,7 @@ aether-renderer-core -i sacred-stars.zip -o stars.webm
 - [x] Preview a single frame
 - [x] GUI version with Tauri
 - [x] ProRes 4444 MOV, TOML config, config + CLI override, Windows-safe input (0.5)
+- [x] Background color for any format, real progress bar and `--progress json` (0.6)
 - [ ] Safari-ready transparent video (HEVC with alpha) and a `--format web` that writes both
 - [ ] Resize and crop (`--width`, `--height`)
 - [ ] Frames from stdin, for piping from canvas and AI tools

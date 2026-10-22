@@ -22,6 +22,7 @@ fn benchmark_render_single_frame() -> Result<(), Box<dyn std::error::Error>> {
         preview: None,
         verbose: false,
         verbose_ffmpeg: false,
+        background: None,
     };
 
     let start = Instant::now();

@@ -5,7 +5,7 @@ pub mod report;
 pub mod utils;
 
 pub use config::RenderConfig;
-pub use report::RenderReport;
+pub use report::{RenderProgress, RenderReport};
 
 use indicatif::{ProgressBar, ProgressStyle};
 use std::path::{Path, PathBuf};
@@ -20,6 +20,28 @@ pub fn render_from_config(config_path: &str) -> Result<RenderReport, String> {
 
 /// Orchestrate rendering from a parsed configuration
 pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
+    render_with_progress(args, |_| {})
+}
+
+/// Like [`render`], but calls `on_progress` while ffmpeg works: once with frame 0
+/// when encoding starts, then about twice a second, and with 100% at the end.
+/// Use it to drive a progress bar in a GUI or another tool.
+///
+/// ```no_run
+/// # use aether_renderer_core::{render_with_progress, RenderConfig};
+/// # fn demo(cfg: RenderConfig) -> Result<(), String> {
+/// render_with_progress(cfg, |p| {
+///     println!("{:.0}% ({}/{} frames)", p.percent, p.frame, p.total_frames);
+/// })?;
+/// # Ok(()) }
+/// ```
+pub fn render_with_progress<F>(
+    args: RenderConfig,
+    mut on_progress: F,
+) -> Result<RenderReport, String>
+where
+    F: FnMut(RenderProgress),
+{
     if args.verbose {
         let version = env!("CARGO_PKG_VERSION");
         eprintln!("🪼 Aether Renderer v{version} starting...");
@@ -39,6 +61,14 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
     if args.fps == 0 {
         return Err("❌ fps must be greater than 0.".into());
     }
+    // Normalized again here for callers that build a RenderConfig themselves.
+    let chosen_background = config::parse_background(args.background.as_deref().unwrap_or(""))?;
+    let mp4_default_background = chosen_background.is_none() && args.format == "mp4";
+    let background = if mp4_default_background {
+        Some("black".to_string())
+    } else {
+        chosen_background
+    };
 
     // Is this a preview render?
     if args.is_preview() {
@@ -143,29 +173,43 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
 
     if args.verbose {
         println!(
-            "🌿 Rendering {} frames from {} → {} ({}, {} fps, {:.2} s)...",
+            "🌿 Rendering {} frames from {} → {} ({}, {} fps, {:.2} s{})...",
             frame_count,
             working_input_path.display(),
             args.output,
             args.format,
             args.fps,
-            duration
+            duration,
+            match &background {
+                Some(c) => format!(", background {c}"),
+                None => String::new(),
+            }
         );
     }
 
-    let maybe_spinner = if args.verbose {
-        let pb = ProgressBar::new_spinner();
+    let maybe_bar = if args.verbose {
+        let pb = ProgressBar::new(frame_count as u64);
         pb.set_style(
             ProgressStyle::with_template(
-                "{spinner:.green} 🌿 Rendering with FFmpeg... {elapsed_precise}",
+                "{spinner:.green} 🌿 Rendering {bar:30.cyan/blue} {pos}/{len} frames {percent:>3}% {elapsed_precise}",
             )
             .unwrap()
-            .tick_chars("䷀䷫䷌䷅䷤䷥䷄䷍䷪"),
+            .tick_chars("䷀䷫䷌䷅䷤䷥䷄䷍䷪")
+            .progress_chars("█▓░"),
         );
         pb.enable_steady_tick(Duration::from_millis(120));
         Some(pb)
     } else {
         None
+    };
+
+    on_progress(RenderProgress::new(0, frame_count));
+    let mut on_frame = |n: u32| {
+        let progress = RenderProgress::new(n, frame_count);
+        if let Some(pb) = &maybe_bar {
+            pb.set_position(progress.frame as u64);
+        }
+        on_progress(progress);
     };
 
     let result = if args.format == "gif" {
@@ -174,7 +218,9 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
             &args.output,
             args.fps,
             Some(&fade_filter),
+            background.as_deref(),
             args.verbose_ffmpeg,
+            &mut on_frame,
         )
     } else {
         ffmpeg::video::render_video(
@@ -185,13 +231,24 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
             args.bitrate.as_deref(),
             args.crf,
             Some(&fade_filter),
+            background.as_deref(),
             args.verbose_ffmpeg,
+            &mut on_frame,
         )
     };
-    if let Some(pb) = &maybe_spinner {
+    if let Some(pb) = &maybe_bar {
         pb.finish_and_clear();
     }
     let mut render_report = result?;
+    // ffmpeg's last report can come before the final frame is counted.
+    on_progress(RenderProgress::new(frame_count, frame_count));
+
+    if mp4_default_background && input::png_has_alpha(&frames[0]) {
+        let note = "ℹ️ mp4 cannot be transparent, so transparent areas are black. \
+                    Set a background color (--background) to choose another.";
+        render_report.notes =
+            Some(render_report.notes.clone().unwrap_or_default() + &format!("\n{}", note));
+    }
 
     // Post-inject known input frame count after rendering
     render_report.frames_rendered = Some(frame_count as usize);
@@ -224,11 +281,11 @@ pub fn render(args: RenderConfig) -> Result<RenderReport, String> {
     Ok(render_report)
 }
 
-/// The `fade` filters for the configured fade in/out. Formats with transparency
-/// fade the alpha channel, so a transparent animation fades to transparent
-/// instead of to black.
+/// The `fade` filters for the configured fade in/out. They fade the alpha channel,
+/// so a transparent animation fades to transparent, or, with a background color
+/// (always for mp4), to that color.
 fn fade_filter(args: &RenderConfig, duration: f32) -> String {
-    let alpha = if args.format == "mp4" { "" } else { ":alpha=1" };
+    let alpha = ":alpha=1";
     let mut fades = Vec::new();
     if args.fade_in > 0.0 {
         fades.push(format!("fade=t=in:st=0:d={}{}", args.fade_in, alpha));
