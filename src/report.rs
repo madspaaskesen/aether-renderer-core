@@ -53,3 +53,31 @@ impl RenderReport {
         summary
     }
 }
+
+/// How far a render has come, passed to the callback of
+/// [`render_with_progress`](crate::render_with_progress).
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+pub struct RenderProgress {
+    /// Frames encoded so far
+    pub frame: u32,
+    /// Frames in the sequence
+    pub total_frames: u32,
+    /// 0.0 – 100.0, rounded to two decimals
+    pub percent: f64,
+}
+
+impl RenderProgress {
+    pub fn new(frame: u32, total_frames: u32) -> Self {
+        let frame = frame.min(total_frames);
+        let percent = if total_frames == 0 {
+            100.0
+        } else {
+            (frame as f64 * 10_000.0 / total_frames as f64).round() / 100.0
+        };
+        Self {
+            frame,
+            total_frames,
+            percent,
+        }
+    }
+}

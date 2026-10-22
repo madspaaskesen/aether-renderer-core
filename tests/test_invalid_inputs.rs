@@ -17,6 +17,7 @@ fn test_nonexistent_input_path() {
         file_pattern: None,
         verbose: false,
         verbose_ffmpeg: false,
+        background: None,
     };
 
     let result = render(cfg);
@@ -41,6 +42,7 @@ fn test_unsupported_format() {
         file_pattern: None,
         verbose: false,
         verbose_ffmpeg: false,
+        background: None,
     };
 
     let result = render(cfg);
@@ -66,6 +68,7 @@ fn test_unsupported_format2() {
         file_pattern: None,
         verbose: false,
         verbose_ffmpeg: false,
+        background: None,
     };
 
     let result = render(cfg);
@@ -93,6 +96,7 @@ fn test_unsupported_format3() {
         file_pattern: None,
         verbose: false,
         verbose_ffmpeg: false,
+        background: None,
     };
 
     let result = render(cfg);

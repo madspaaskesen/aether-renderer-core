@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.6.0
+
+### Added
+- **`--background <COLOR>`** (`background` in config files): paint the frames onto a solid
+  color, e.g. `'#1e1e1e'`, `'#fff'` or `white`. Works for every format and makes the output
+  opaque; fades go to that color, and mp4's padding pixel gets it too.
+- **Real progress.** `--verbose` shows a progress bar with frames done instead of a spinner.
+- **`--progress json`**: one JSON object per line on stdout (`progress`, then `done` or
+  `error`), so GUIs and scripts can show their own progress.
+- **`render_with_progress(config, |p| ...)`** for library users, with `RenderProgress`
+  (`frame`, `total_frames`, `percent`).
+- `--verbose-ffmpeg` now prints ffmpeg's log as it runs.
+
+### Changed
+- **MP4 flattens transparency onto black explicitly** (or onto `--background`). Before,
+  transparent pixels kept whatever color hid under them, which could look different per
+  exporter. When the frames have transparency, the report says so and points to `--background`.
+- Breaking for library users: `RenderConfig` has a new `background` field, and
+  `ffmpeg::video::render_video` / `ffmpeg::gif::render_gif` take `background` and an
+  `on_frame` callback.
+
 ## 0.5.0
 
 A release about trust: everything the README promised now works, and every bug below

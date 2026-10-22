@@ -219,51 +219,123 @@ pub fn ffmpeg_base_args(verbose_ffmpeg: bool) -> Vec<String> {
     ]
 }
 
+/// The error for a failed ffmpeg run, ending with the last lines ffmpeg printed,
+/// which usually say what went wrong.
+fn ffmpeg_failure(status: ExitStatus, stderr: &str) -> String {
+    let mut msg = format!("❌ ffmpeg exited with code {}", status.code().unwrap_or(-1));
+    let tail: Vec<&str> = stderr
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .collect();
+    if !tail.is_empty() {
+        msg.push_str(":\n");
+        for line in &tail[tail.len().saturating_sub(8)..] {
+            msg.push_str("   ");
+            msg.push_str(line);
+            msg.push('\n');
+        }
+        msg.push_str("   (run with --verbose-ffmpeg for the full log)");
+    }
+    msg
+}
+
+fn spawn_error(e: std::io::Error) -> String {
+    if e.kind() == std::io::ErrorKind::NotFound {
+        "❌ ffmpeg not found in PATH.".to_string()
+    } else {
+        format!("❌ ffmpeg failed to run: {}", e)
+    }
+}
+
 /// Run ffmpeg and return its stderr. On failure the error includes the last lines
 /// ffmpeg printed, which usually say what went wrong.
 pub fn run_ffmpeg_with_output(args: &[String]) -> Result<(ExitStatus, String), String> {
-    let output = Command::new("ffmpeg").args(args).output().map_err(|e| {
-        if e.kind() == std::io::ErrorKind::NotFound {
-            "❌ ffmpeg not found in PATH.".to_string()
-        } else {
-            format!("❌ ffmpeg failed to run: {}", e)
-        }
-    })?;
+    let output = Command::new("ffmpeg")
+        .args(args)
+        .output()
+        .map_err(spawn_error)?;
 
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
     if !output.status.success() {
-        let mut msg = format!(
-            "❌ ffmpeg exited with code {}",
-            output.status.code().unwrap_or(-1)
-        );
-        let tail: Vec<&str> = stderr
-            .lines()
-            .map(str::trim)
-            .filter(|l| !l.is_empty())
-            .collect();
-        if !tail.is_empty() {
-            msg.push_str(":\n");
-            for line in &tail[tail.len().saturating_sub(8)..] {
-                msg.push_str("   ");
-                msg.push_str(line);
-                msg.push('\n');
-            }
-            msg.push_str("   (run with --verbose-ffmpeg for the full log)");
-        }
-        return Err(msg);
+        return Err(ffmpeg_failure(output.status, &stderr));
     }
     Ok((output.status, stderr))
 }
 
 /// Like [`run_ffmpeg_with_output`], but removes a half-written `output` file if ffmpeg fails.
 pub fn run_ffmpeg_for_output(args: &[String], output: &str) -> Result<String, String> {
-    match run_ffmpeg_with_output(args) {
-        Ok((_, stderr)) => Ok(stderr),
-        Err(e) => {
-            let _ = std::fs::remove_file(output);
-            Err(e)
+    run_ffmpeg_with_progress(args, output, false, &mut |_| {})
+}
+
+/// Run ffmpeg, calling `on_frame` with the number of frames written so far
+/// (from ffmpeg's `-progress` output, about twice a second, and once at the end).
+///
+/// Returns ffmpeg's stderr. With `echo_stderr`, ffmpeg's log is also printed as it
+/// arrives. On failure a half-written `output` file is removed.
+pub fn run_ffmpeg_with_progress(
+    args: &[String],
+    output: &str,
+    echo_stderr: bool,
+    on_frame: &mut dyn FnMut(u32),
+) -> Result<String, String> {
+    use std::io::{BufRead, BufReader, Read};
+    use std::process::Stdio;
+
+    let mut child = Command::new("ffmpeg")
+        .args(["-progress", "pipe:1", "-nostats"])
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(spawn_error)?;
+
+    // Read stderr on its own thread so neither pipe can fill up and block ffmpeg.
+    let mut stderr_pipe = child.stderr.take().expect("stderr is piped");
+    let stderr_thread = std::thread::spawn(move || {
+        let mut text = String::new();
+        if echo_stderr {
+            for line in BufReader::new(stderr_pipe).lines().map_while(Result::ok) {
+                eprintln!("{line}");
+                text.push_str(&line);
+                text.push('\n');
+            }
+        } else {
+            let mut bytes = Vec::new();
+            let _ = stderr_pipe.read_to_end(&mut bytes);
+            text = String::from_utf8_lossy(&bytes).into_owned();
+        }
+        text
+    });
+
+    let stdout = child.stdout.take().expect("stdout is piped");
+    for line in BufReader::new(stdout).lines().map_while(Result::ok) {
+        if let Some(n) = line.trim().strip_prefix("frame=") {
+            if let Ok(n) = n.trim().parse::<u32>() {
+                on_frame(n);
+            }
         }
     }
+
+    let status = child.wait().map_err(spawn_error)?;
+    let stderr = stderr_thread.join().unwrap_or_default();
+    if !status.success() {
+        let _ = std::fs::remove_file(output);
+        return Err(ffmpeg_failure(status, &stderr));
+    }
+    Ok(stderr)
+}
+
+/// The ffmpeg filters that paint `color` behind the (transparent) frames, so the
+/// result is fully opaque. Labels are local to this snippet, so it can be placed
+/// anywhere in a `-vf` chain or `-filter_complex` graph.
+pub fn background_filter(color: &str) -> String {
+    format!(
+        "format=rgba,split[ar_fg][ar_canvas];\
+         [ar_canvas]drawbox=x=0:y=0:w=iw:h=ih:color={color}:t=fill:replace=1[ar_bg];\
+         [ar_bg][ar_fg]overlay=format=auto"
+    )
 }
 
 #[cfg(test)]

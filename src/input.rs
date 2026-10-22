@@ -182,6 +182,34 @@ fn link_or_copy(src: &Path, dst: &Path) -> std::io::Result<()> {
     std::fs::copy(&src, dst).map(|_| ())
 }
 
+/// Whether a PNG file can hold transparency: an alpha channel (RGBA or gray +
+/// alpha) or a `tRNS` chunk. Returns `false` for anything that is not a readable PNG.
+pub fn png_has_alpha(path: &Path) -> bool {
+    let Ok(bytes) = std::fs::read(path) else {
+        return false;
+    };
+    if bytes.len() < 33 || &bytes[..8] != b"\x89PNG\r\n\x1a\n" {
+        return false;
+    }
+    // IHDR is always first: color type 4 = gray + alpha, 6 = RGBA.
+    if matches!(bytes[25], 4 | 6) {
+        return true;
+    }
+    // Palette / gray / RGB images can still mark colors transparent in tRNS,
+    // which comes before the image data.
+    let mut pos = 8;
+    while pos + 8 <= bytes.len() {
+        let len = u32::from_be_bytes([bytes[pos], bytes[pos + 1], bytes[pos + 2], bytes[pos + 3]])
+            as usize;
+        match &bytes[pos + 4..pos + 8] {
+            b"tRNS" => return true,
+            b"IDAT" | b"IEND" => return false,
+            _ => pos += 12 + len,
+        }
+    }
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

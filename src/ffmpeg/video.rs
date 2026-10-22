@@ -10,6 +10,13 @@ use crate::utils;
 /// - `mov`: ProRes 4444 with alpha, for video editors (bitrate/crf are ignored)
 ///
 /// `input_pattern` is an ffmpeg image input such as `frames/%06d.png`.
+///
+/// With a `background` color (an ffmpeg color such as `0x1E1E1E` or `white`) the
+/// frames are painted onto it and the output is opaque; `fade_filter` runs first,
+/// so fades go to the background color. mp4 has no alpha, so it uses black when
+/// no background is given.
+///
+/// `on_frame` is called with the number of frames written so far.
 #[allow(clippy::too_many_arguments)]
 pub fn render_video(
     input_pattern: &str,
@@ -19,7 +26,9 @@ pub fn render_video(
     bitrate: Option<&str>,
     crf: Option<u32>,
     fade_filter: Option<&str>,
+    background: Option<&str>,
     verbose_ffmpeg: bool,
+    on_frame: &mut dyn FnMut(u32),
 ) -> Result<RenderReport, String> {
     if !matches!(format, "webm" | "mp4" | "mov") {
         return Err(format!(
@@ -36,9 +45,15 @@ pub fn render_video(
     }
     args.extend(["-i".into(), input_pattern.to_string()]);
 
-    let mut filters: Vec<&str> = Vec::new();
+    let background = background.or((format == "mp4").then_some("black"));
+    let opaque = background.is_some();
+
+    let mut filters: Vec<String> = Vec::new();
     if let Some(f) = fade_filter.filter(|f| !f.is_empty()) {
-        filters.push(f);
+        filters.push(f.to_string());
+    }
+    if let Some(color) = background {
+        filters.push(utils::background_filter(color));
     }
 
     let s = |v: &[&str]| v.iter().map(|x| x.to_string()).collect::<Vec<String>>();
@@ -48,7 +63,7 @@ pub fn render_video(
                 "-c:v",
                 "libvpx-vp9",
                 "-pix_fmt",
-                "yuva420p",
+                if opaque { "yuv420p" } else { "yuva420p" },
                 "-auto-alt-ref",
                 "0",
                 "-row-mt",
@@ -67,7 +82,11 @@ pub fn render_video(
         }
         "mp4" => {
             // H.264 needs even width and height; pad by at most one pixel.
-            filters.push("pad=ceil(iw/2)*2:ceil(ih/2)*2");
+            // The extra pixel gets the background color too.
+            filters.push(format!(
+                "pad=ceil(iw/2)*2:ceil(ih/2)*2:color={}",
+                background.unwrap_or("black")
+            ));
             args.extend(s(&[
                 "-c:v",
                 "libx264",
@@ -86,13 +105,18 @@ pub fn render_video(
         }
         _ => {
             // mov: ProRes 4444 keeps full-quality alpha; the format editors expect.
+            // With a background there is no alpha to keep.
             args.extend(s(&[
                 "-c:v",
                 "prores_ks",
                 "-profile:v",
                 "4444",
                 "-pix_fmt",
-                "yuva444p10le",
+                if opaque {
+                    "yuv444p10le"
+                } else {
+                    "yuva444p10le"
+                },
                 "-vendor",
                 "apl0",
             ]));
@@ -106,7 +130,7 @@ pub fn render_video(
 
     args.extend(["-y".into(), output.to_string()]);
 
-    let video_stderr = utils::run_ffmpeg_for_output(&args, output)?;
+    let video_stderr = utils::run_ffmpeg_with_progress(&args, output, verbose_ffmpeg, on_frame)?;
     let warnings = utils::scan_ffmpeg_stderr(&video_stderr);
 
     Ok(RenderReport {

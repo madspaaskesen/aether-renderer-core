@@ -316,3 +316,175 @@ fn no_arguments_prints_help_and_fails() {
     assert!(!out.status.success());
     assert!(String::from_utf8_lossy(&out.stdout).contains("Usage"));
 }
+
+/// RGBA of pixel (x, y) in frame `n` of a `w`×`h` video.
+fn pixel(file: &Path, n: u32, (w, h): (usize, usize), (x, y): (usize, usize)) -> [u8; 4] {
+    let decoder: &[&str] = if file.extension().is_some_and(|e| e == "webm") {
+        &["-c:v", "libvpx-vp9"]
+    } else {
+        &[]
+    };
+    let out = Command::new("ffmpeg")
+        .args(["-v", "error"])
+        .args(decoder)
+        .arg("-i")
+        .arg(file)
+        .args([
+            "-vf",
+            &format!("select=eq(n\\,{n})"),
+            "-frames:v",
+            "1",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "-",
+        ])
+        .output()
+        .unwrap();
+    let px = out.stdout;
+    assert_eq!(px.len(), w * h * 4, "unexpected frame size");
+    let i = (y * w + x) * 4;
+    [px[i], px[i + 1], px[i + 2], px[i + 3]]
+}
+
+fn close_to(got: [u8; 4], want: [u8; 4]) -> bool {
+    got.iter()
+        .zip(want)
+        .all(|(&g, w)| (g as i16 - w as i16).abs() <= 14)
+}
+
+#[test]
+fn background_color_works_for_every_format() {
+    require_ffmpeg!();
+    let f = frames();
+    let dir = f.path().to_str().unwrap();
+    let blue = [0x20, 0x40, 0xff, 255];
+    let red = [255, 0, 0, 255];
+    for (fmt, size) in [
+        ("webm", (321, 241)),
+        ("mov", (321, 241)),
+        ("gif", (321, 241)),
+        ("mp4", (322, 242)),
+    ] {
+        let out = f.path().join(format!("bg.{fmt}"));
+        let res = render(&[
+            "-i",
+            dir,
+            "-o",
+            out.to_str().unwrap(),
+            "--fps",
+            "12",
+            "--background",
+            "#2040ff",
+            "--fade-in",
+            "0.5",
+        ]);
+        assert!(res.status.success(), "{fmt}");
+        let corner = pixel(&out, 6, size, (0, 0));
+        let center = pixel(&out, 6, size, (160, 120));
+        let faded = pixel(&out, 0, size, (160, 120));
+        assert!(close_to(corner, blue), "{fmt} corner {corner:?}");
+        assert!(close_to(center, red), "{fmt} center {center:?}");
+        assert!(
+            close_to(faded, blue),
+            "{fmt} fades to the background {faded:?}"
+        );
+        if fmt == "mp4" {
+            let pad = pixel(&out, 6, size, (321, 100));
+            assert!(close_to(pad, blue), "mp4 padding {pad:?}");
+        }
+    }
+}
+
+#[test]
+fn mp4_without_background_is_black_and_says_so() {
+    require_ffmpeg!();
+    let f = frames();
+    let out = f.path().join("plain.mp4");
+    let res = render(&[
+        "-i",
+        f.path().to_str().unwrap(),
+        "-o",
+        out.to_str().unwrap(),
+    ]);
+    assert!(res.status.success());
+    let corner = pixel(&out, 6, (322, 242), (0, 0));
+    assert!(close_to(corner, [0, 0, 0, 255]), "{corner:?}");
+    let stdout = String::from_utf8_lossy(&res.stdout);
+    assert!(stdout.contains("--background"), "{stdout}");
+}
+
+#[test]
+fn invalid_background_is_rejected() {
+    require_ffmpeg!();
+    let f = frames();
+    let out = f.path().join("x.webm");
+    let res = render(&[
+        "-i",
+        f.path().to_str().unwrap(),
+        "-o",
+        out.to_str().unwrap(),
+        "--background",
+        "#12345",
+    ]);
+    assert!(!res.status.success());
+    assert!(String::from_utf8_lossy(&res.stderr).contains("Invalid background color"));
+    assert!(!out.exists());
+}
+
+#[test]
+fn progress_json_lines() {
+    require_ffmpeg!();
+    let f = frames();
+    let out = f.path().join("p.webm");
+    let res = render(&[
+        "-i",
+        f.path().to_str().unwrap(),
+        "-o",
+        out.to_str().unwrap(),
+        "--progress",
+        "json",
+    ]);
+    assert!(res.status.success());
+    let events: Vec<serde_json::Value> = String::from_utf8_lossy(&res.stdout)
+        .lines()
+        .map(|l| serde_json::from_str(l).expect("every stdout line is JSON"))
+        .collect();
+    let progress: Vec<&serde_json::Value> =
+        events.iter().filter(|e| e["event"] == "progress").collect();
+    assert_eq!(progress.first().unwrap()["frame"], 0);
+    let last = progress.last().unwrap();
+    assert_eq!(last["frame"], 12);
+    assert_eq!(last["total_frames"], 12);
+    assert_eq!(last["percent"], 100.0);
+    let done = events.last().unwrap();
+    assert_eq!(done["event"], "done");
+    assert_eq!(done["frames"], 12);
+
+    // Errors are reported as JSON too.
+    let res = render(&["-i", "does/not/exist", "-o", "x.webm", "--progress", "json"]);
+    assert!(!res.status.success());
+    let line = String::from_utf8_lossy(&res.stdout);
+    let err: serde_json::Value = serde_json::from_str(line.trim()).unwrap();
+    assert_eq!(err["event"], "error");
+}
+
+#[test]
+fn library_progress_callback() {
+    require_ffmpeg!();
+    let f = frames();
+    let cfg = aether_renderer_core::config::PartialConfig {
+        input: Some(f.path().to_path_buf()),
+        output: Some(f.path().join("cb.mp4").to_string_lossy().into_owned()),
+        ..Default::default()
+    }
+    .into_config()
+    .unwrap();
+    let mut seen = Vec::new();
+    aether_renderer_core::render_with_progress(cfg, |p| seen.push(p)).unwrap();
+    assert_eq!(seen.first().unwrap().frame, 0);
+    assert_eq!(seen.last().unwrap().frame, 12);
+    assert_eq!(seen.last().unwrap().percent, 100.0);
+    assert!(seen.windows(2).all(|w| w[0].frame <= w[1].frame));
+}

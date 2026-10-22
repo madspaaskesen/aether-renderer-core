@@ -1,6 +1,6 @@
 [package]
 name = "aether-renderer-core"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 description = "Render PNG image sequences to transparent WebM (VP9), ProRes 4444 MOV, GIF or MP4 with ffmpeg"
 license = "MIT"
