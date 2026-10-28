@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **`--input -`: frames from a PNG stream on stdin** (PNG files back to back), e.g.
+  `aether-renderer-capture --stdout | aether-renderer-core -i - -o out.webm`. Every format
+  works; the bytes go straight to ffmpeg, so there are no temp files. Output is pixel for
+  pixel the same as rendering the frames from a folder.
+- **`--frames N`** for a stdin stream: optional, gives a real progress percentage and is
+  needed for `--fade-out`. Without it, progress reports `total_frames: 0` (unknown).
+- **`render_stream(config, reader, expected_frames, on_progress)`** for library users:
+  render from any `Read`, e.g. a child process's stdout.
+- `utils::run_ffmpeg_with_input` and `input::png_bytes_have_alpha`.
+- Clear errors for an empty stream, `--fade-out` without `--frames`, `--frames` without
+  `-i -`, and `--preview` on a stream. A failed stream render leaves no half-written file.
+
+No breaking changes: `RenderConfig` and the existing functions are unchanged.
+
 ## 0.6.0
 
 ### Added

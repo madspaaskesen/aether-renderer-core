@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use super::FfmpegInput;
 use crate::report::RenderReport;
 use crate::utils;
 
@@ -30,6 +31,34 @@ pub fn render_video(
     verbose_ffmpeg: bool,
     on_frame: &mut dyn FnMut(u32),
 ) -> Result<RenderReport, String> {
+    render_video_from(
+        FfmpegInput::Sequence(input_pattern),
+        output,
+        fps,
+        format,
+        bitrate,
+        crf,
+        fade_filter,
+        background,
+        verbose_ffmpeg,
+        on_frame,
+    )
+}
+
+/// [`render_video`] for any [`FfmpegInput`], including a PNG stream on stdin.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn render_video_from(
+    input: FfmpegInput,
+    output: &str,
+    fps: u32,
+    format: &str,
+    bitrate: Option<&str>,
+    crf: Option<u32>,
+    fade_filter: Option<&str>,
+    background: Option<&str>,
+    verbose_ffmpeg: bool,
+    on_frame: &mut dyn FnMut(u32),
+) -> Result<RenderReport, String> {
     if !matches!(format, "webm" | "mp4" | "mov") {
         return Err(format!(
             "❌ Unsupported format: {}. Use 'webm', 'mp4' or 'mov'.",
@@ -38,12 +67,9 @@ pub fn render_video(
     }
 
     let mut args = utils::ffmpeg_base_args(verbose_ffmpeg);
-    args.extend(["-framerate".into(), fps.to_string()]);
-    if input_pattern.contains('*') {
-        // Kept for callers passing their own glob; render() always passes a numbered sequence.
-        args.extend(["-pattern_type".into(), "glob".into()]);
-    }
-    args.extend(["-i".into(), input_pattern.to_string()]);
+    // A glob is kept for callers passing their own; render() passes a numbered sequence.
+    let (input_args, stdin) = input.into_args(fps);
+    args.extend(input_args);
 
     let background = background.or((format == "mp4").then_some("black"));
     let opaque = background.is_some();
@@ -130,7 +156,8 @@ pub fn render_video(
 
     args.extend(["-y".into(), output.to_string()]);
 
-    let video_stderr = utils::run_ffmpeg_with_progress(&args, output, verbose_ffmpeg, on_frame)?;
+    let video_stderr =
+        utils::run_ffmpeg_with_input(&args, output, verbose_ffmpeg, on_frame, stdin)?;
     let warnings = utils::scan_ffmpeg_stderr(&video_stderr);
 
     Ok(RenderReport {

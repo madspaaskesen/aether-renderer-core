@@ -185,9 +185,12 @@ fn link_or_copy(src: &Path, dst: &Path) -> std::io::Result<()> {
 /// Whether a PNG file can hold transparency: an alpha channel (RGBA or gray +
 /// alpha) or a `tRNS` chunk. Returns `false` for anything that is not a readable PNG.
 pub fn png_has_alpha(path: &Path) -> bool {
-    let Ok(bytes) = std::fs::read(path) else {
-        return false;
-    };
+    std::fs::read(path).is_ok_and(|bytes| png_bytes_have_alpha(&bytes))
+}
+
+/// [`png_has_alpha`] for PNG bytes, e.g. the start of a PNG stream. The first
+/// few KB are enough: IHDR and tRNS come before the image data.
+pub fn png_bytes_have_alpha(bytes: &[u8]) -> bool {
     if bytes.len() < 33 || &bytes[..8] != b"\x89PNG\r\n\x1a\n" {
         return false;
     }

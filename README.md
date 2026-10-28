@@ -28,6 +28,7 @@ aether-renderer-core -i frames/ -o animation.webm
 
 - 🫧 **Transparent output** in WebM (VP9), MOV (ProRes 4444) and GIF; MP4 for when you don't need alpha
 - 📦 Frames from a **folder or a ZIP** (macOS `__MACOSX` / `._` files are skipped)
+- 🚰 Or a **PNG stream on stdin** (`-i -`), e.g. piped from [aether-renderer-capture](https://github.com/madspaaskesen/aether-renderer-capture): no temp files
 - 🔢 Frames in **natural order**: `frame_2.png` comes before `frame_10.png`, with or without zero padding
 - 🌗 **Fade in / fade out** that fades to *transparent* (or to your background color), not to black
 - 🎨 **Background color** (`--background '#1e1e1e'`) to flatten transparency onto a solid color, for any format
@@ -98,13 +99,17 @@ aether-renderer-core -i renders/ -o out.webm --file-pattern 'frame_%04d.png'
 # check a frame first: saves the middle frame (or frame 12) as out.png
 aether-renderer-core -i frames/ -o out.webm --preview
 aether-renderer-core -i frames/ -o out.webm --preview 12
+
+# PNG files back to back on stdin, straight from another program
+aether-renderer-capture -i anim.html --stdout -d 4 | aether-renderer-core -i - -o out.webm --frames 120
 ```
 
 ### All options
 
 | Option | Default | Description |
 |---|---|---|
-| `-i, --input` | *required* | Folder or `.zip` with the frames |
+| `-i, --input` | *required* | Folder or `.zip` with the frames, or `-` for a PNG stream on stdin |
+| `--frames` | | With `-i -`: how many frames the stream has. Optional; gives a real progress percentage and is needed for `--fade-out` |
 | `-o, --output` | `output.<format>` | Output file |
 | `--format` | from the output extension, else `webm` | `webm`, `mov`, `gif` or `mp4` |
 | `--fps` | `30` | Frames per second |
@@ -136,6 +141,8 @@ can draw its own progress bar:
 ```
 
 On failure the last line is `{"event":"error","message":"..."}` and the exit code is 1.
+With a stream on stdin and no `--frames`, `total_frames` is `0` (unknown) and
+`percent` stays `0` until the end; `done` still reports the frame count.
 Progress comes from ffmpeg about twice a second. GIFs need every frame before they
 can be written, so their progress mostly jumps to 100% at the end.
 
@@ -193,6 +200,21 @@ For a progress bar, use `render_with_progress`:
 ```rust
 let report = aether_renderer_core::render_with_progress(cfg, |p| {
     println!("{:.0}% ({}/{} frames)", p.percent, p.frame, p.total_frames);
+})?;
+```
+
+To render a PNG stream from any reader (no temp files), use `render_stream`.
+The frame count is optional:
+
+```rust
+let frames = std::process::Command::new("aether-renderer-capture")
+    .args(["-i", "anim.html", "--stdout"])
+    .stdout(std::process::Stdio::piped())
+    .spawn()?
+    .stdout
+    .unwrap();
+aether_renderer_core::render_stream(cfg, frames, Some(60), |p| {
+    println!("{}/{} frames", p.frame, p.total_frames);
 })?;
 ```
 
@@ -258,7 +280,8 @@ aether-renderer-core -i sacred-stars.zip -o stars.webm
 - [x] Background color for any format, real progress bar and `--progress json` (0.6)
 - [ ] Safari-ready transparent video (HEVC with alpha) and a `--format web` that writes both
 - [ ] Resize and crop (`--width`, `--height`)
-- [ ] Frames from stdin, for piping from canvas and AI tools
+- [x] Frames from a PNG stream on stdin (`-i -`), for piping from capture, canvas and AI tools (0.7)
+- [ ] Raw RGBA frames on stdin, for programs that produce pixels instead of PNGs
 
 Ideas and bug reports are welcome in [issues](https://github.com/madspaaskesen/aether-renderer-core/issues).
 
