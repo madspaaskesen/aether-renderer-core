@@ -1,5 +1,5 @@
 use aether_renderer_core::config::PartialConfig;
-use aether_renderer_core::RenderReport;
+use aether_renderer_core::{is_stdin_input, RenderConfig, RenderProgress, RenderReport};
 use clap::{CommandFactory, Parser};
 use std::path::PathBuf;
 
@@ -15,15 +15,22 @@ use std::path::PathBuf;
     aether-renderer-core -i frames/ -o out.mov            (ProRes 4444 with alpha, for video editors)\n  \
     aether-renderer-core -i frames/ -o out.mp4 --background '#1e1e1e'\n  \
     aether-renderer-core -i frames/ -o out.webm --progress json   (one JSON line per update, for other programs)\n  \
+    aether-renderer-capture -i anim.html --stdout | aether-renderer-core -i - -o out.webm --frames 60\n  \
     aether-renderer-core --config render.toml --fps 60 -o draft.webm")]
 struct Args {
     /// Config file (.json or .toml); command-line options override its values
     #[arg(short, long)]
     config: Option<PathBuf>,
 
-    /// Folder or .zip with the frames
+    /// Folder or .zip with the frames, or '-' for a PNG stream on stdin
+    /// (PNG files back to back, e.g. from aether-renderer-capture --stdout)
     #[arg(short, long)]
     input: Option<PathBuf>,
+
+    /// How many frames the stdin stream has (with --input -). Optional; gives a
+    /// real progress percentage and is needed for --fade-out
+    #[arg(long, value_name = "N")]
+    frames: Option<u32>,
 
     /// Output file [default: output.<format>]
     #[arg(short, long)]
@@ -137,15 +144,20 @@ fn run(args: &Args, json: bool) -> Result<(), String> {
         None => PartialConfig::default(),
     };
     let cfg = args.overrides().or(file).into_config()?;
+    let stdin = is_stdin_input(&cfg.input);
+    if args.frames.is_some() && !stdin {
+        return Err("❌ --frames only applies to a stream on stdin (--input -).".into());
+    }
+    let frames = args.frames;
     let verbose = cfg.verbose;
     if !json {
-        let report = aether_renderer_core::render(cfg)?;
+        let report = render(cfg, stdin, frames, |_| {})?;
         print_report(&report, verbose);
         return Ok(());
     }
 
     let mut last = None;
-    let report = aether_renderer_core::render_with_progress(cfg, |p| {
+    let report = render(cfg, stdin, frames, |p| {
         // Skip repeats (ffmpeg reports the same frame while it waits on input).
         if last != Some(p.frame) {
             last = Some(p.frame);
@@ -162,6 +174,20 @@ fn run(args: &Args, json: bool) -> Result<(), String> {
         "notes": report.notes,
     }));
     Ok(())
+}
+
+/// Render a folder/ZIP, or the PNG stream on stdin with its optional frame count.
+fn render<F: FnMut(RenderProgress)>(
+    cfg: RenderConfig,
+    stdin: bool,
+    frames: Option<u32>,
+    on_progress: F,
+) -> Result<RenderReport, String> {
+    if stdin {
+        aether_renderer_core::render_stream(cfg, std::io::stdin(), frames, on_progress)
+    } else {
+        aether_renderer_core::render_with_progress(cfg, on_progress)
+    }
 }
 
 /// Print one JSON line and flush it right away, so a program reading the pipe

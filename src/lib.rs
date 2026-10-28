@@ -7,10 +7,20 @@ pub mod utils;
 pub use config::RenderConfig;
 pub use report::{RenderProgress, RenderReport};
 
+use ffmpeg::FfmpegInput;
 use indicatif::{ProgressBar, ProgressStyle};
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
+
+/// The `input` that means "read a PNG stream from stdin" (`--input -`).
+pub const STDIN_INPUT: &str = "-";
+
+/// Is `input` the stdin marker `-`?
+pub fn is_stdin_input(input: &Path) -> bool {
+    input.as_os_str() == STDIN_INPUT
+}
 
 /// Load configuration from file then render
 pub fn render_from_config(config_path: &str) -> Result<RenderReport, String> {
@@ -42,33 +52,17 @@ pub fn render_with_progress<F>(
 where
     F: FnMut(RenderProgress),
 {
+    if is_stdin_input(&args.input) {
+        return render_stream(args, std::io::stdin(), None, on_progress);
+    }
     if args.verbose {
         let version = env!("CARGO_PKG_VERSION");
         eprintln!("🪼 Aether Renderer v{version} starting...");
     }
-    // Validate output path
-    if args.output.is_empty() {
-        return Err("❌ Output path cannot be empty.".into());
-    }
-
-    if !config::FORMATS.contains(&args.format.as_str()) {
-        return Err(format!(
-            "❌ Unsupported format '{}'. Use one of: {}.",
-            args.format,
-            config::FORMATS.join(", ")
-        ));
-    }
-    if args.fps == 0 {
-        return Err("❌ fps must be greater than 0.".into());
-    }
-    // Normalized again here for callers that build a RenderConfig themselves.
-    let chosen_background = config::parse_background(args.background.as_deref().unwrap_or(""))?;
-    let mp4_default_background = chosen_background.is_none() && args.format == "mp4";
-    let background = if mp4_default_background {
-        Some("black".to_string())
-    } else {
-        chosen_background
-    };
+    let Prepared {
+        background,
+        mp4_default_background,
+    } = prepare(&args)?;
 
     // Is this a preview render?
     if args.is_preview() {
@@ -98,34 +92,7 @@ where
         });
     }
 
-    // Check for ffmpeg availability upfront
-    if args.verbose_ffmpeg {
-        println!("🔍 Checking for ffmpeg...");
-    }
-    let mut ffmpeg_check = Command::new("ffmpeg");
-    ffmpeg_check.arg("-version");
-    if !args.verbose_ffmpeg {
-        ffmpeg_check.stdout(std::process::Stdio::null());
-        ffmpeg_check.stderr(std::process::Stdio::null());
-    }
-    match ffmpeg_check.status() {
-        Ok(s) if s.success() => {}
-        Ok(_) => {
-            return Err("❌ ffmpeg failed to run correctly.".into());
-        }
-        Err(e) => {
-            if e.kind() == std::io::ErrorKind::NotFound {
-                return Err(
-                    "❌ ffmpeg not found. Install it and make sure it is on your PATH:\n   \
-                     macOS: brew install ffmpeg · Ubuntu/Debian: sudo apt install ffmpeg · \
-                     Windows: winget install Gyan.FFmpeg"
-                        .into(),
-                );
-            } else {
-                return Err(format!("❌ Failed to execute ffmpeg: {}", e));
-            }
-        }
-    }
+    check_ffmpeg(args.verbose_ffmpeg)?;
 
     if !args.input.exists() {
         return Err(format!(
@@ -187,21 +154,7 @@ where
         );
     }
 
-    let maybe_bar = if args.verbose {
-        let pb = ProgressBar::new(frame_count as u64);
-        pb.set_style(
-            ProgressStyle::with_template(
-                "{spinner:.green} 🌿 Rendering {bar:30.cyan/blue} {pos}/{len} frames {percent:>3}% {elapsed_precise}",
-            )
-            .unwrap()
-            .tick_chars("䷀䷫䷌䷅䷤䷥䷄䷍䷪")
-            .progress_chars("█▓░"),
-        );
-        pb.enable_steady_tick(Duration::from_millis(120));
-        Some(pb)
-    } else {
-        None
-    };
+    let maybe_bar = args.verbose.then(|| progress_bar(Some(frame_count)));
 
     on_progress(RenderProgress::new(0, frame_count));
     let mut on_frame = |n: u32| {
@@ -212,30 +165,13 @@ where
         on_progress(progress);
     };
 
-    let result = if args.format == "gif" {
-        ffmpeg::gif::render_gif(
-            &input_str,
-            &args.output,
-            args.fps,
-            Some(&fade_filter),
-            background.as_deref(),
-            args.verbose_ffmpeg,
-            &mut on_frame,
-        )
-    } else {
-        ffmpeg::video::render_video(
-            &input_str,
-            &args.output,
-            args.fps,
-            &args.format,
-            args.bitrate.as_deref(),
-            args.crf,
-            Some(&fade_filter),
-            background.as_deref(),
-            args.verbose_ffmpeg,
-            &mut on_frame,
-        )
-    };
+    let result = encode(
+        FfmpegInput::Sequence(&input_str),
+        &args,
+        &fade_filter,
+        background.as_deref(),
+        &mut on_frame,
+    );
     if let Some(pb) = &maybe_bar {
         pb.finish_and_clear();
     }
@@ -253,6 +189,253 @@ where
     // Post-inject known input frame count after rendering
     render_report.frames_rendered = Some(frame_count as usize);
 
+    Ok(finish(&args, render_report))
+}
+
+/// Render a PNG stream: PNG files back to back, as written by
+/// `aether-renderer-capture --stdout` or `ffmpeg -f image2pipe -c:v png -`.
+/// No temp files: the bytes go straight to ffmpeg's stdin. `args.input` is ignored.
+///
+/// `expected_frames` is optional. Without it progress reports `total_frames: 0`
+/// (unknown) and `percent: 0` until the end, and `fade_out` can't be used, since
+/// it needs to know where the stream ends.
+///
+/// ```no_run
+/// # use aether_renderer_core::{render_stream, RenderConfig};
+/// # fn demo(cfg: RenderConfig) -> Result<(), String> {
+/// let frames = std::fs::File::open("frames.pngstream").map_err(|e| e.to_string())?;
+/// render_stream(cfg, frames, Some(120), |p| println!("{}/{}", p.frame, p.total_frames))?;
+/// # Ok(()) }
+/// ```
+pub fn render_stream<R, F>(
+    args: RenderConfig,
+    frames: R,
+    expected_frames: Option<u32>,
+    mut on_progress: F,
+) -> Result<RenderReport, String>
+where
+    R: Read + Send + 'static,
+    F: FnMut(RenderProgress),
+{
+    if args.verbose {
+        let version = env!("CARGO_PKG_VERSION");
+        eprintln!("🪼 Aether Renderer v{version} starting...");
+    }
+    let Prepared {
+        background,
+        mp4_default_background,
+    } = prepare(&args)?;
+    if args.is_preview() {
+        return Err("❌ --preview needs a folder or .zip input, not a stream.".into());
+    }
+    if expected_frames == Some(0) {
+        return Err("❌ --frames must be greater than 0.".into());
+    }
+    if args.fade_out > 0.0 && expected_frames.is_none() {
+        return Err(
+            "❌ --fade-out needs to know where the stream ends: pass the frame count with --frames N."
+                .into(),
+        );
+    }
+    check_ffmpeg(args.verbose_ffmpeg)?;
+
+    // Peek at the start: an empty stream fails here with a clear message instead
+    // of inside ffmpeg, and the first frame tells whether frames are transparent.
+    let mut frames = frames;
+    let mut head = Vec::new();
+    (&mut frames)
+        .take(STREAM_PEEK_BYTES)
+        .read_to_end(&mut head)
+        .map_err(|e| format!("❌ Failed to read the input stream: {e}"))?;
+    if head.is_empty() {
+        return Err("❌ No frames received: the input stream is empty.".into());
+    }
+    let has_alpha = input::png_bytes_have_alpha(&head);
+    let stream: Box<dyn Read + Send> = Box::new(std::io::Cursor::new(head).chain(frames));
+
+    let duration = expected_frames.map(|n| n as f32 / args.fps as f32);
+    let fade_filter = fade_filter(&args, duration.unwrap_or(0.0));
+    if args.verbose {
+        println!(
+            "🌿 Rendering a PNG stream → {} ({}, {} fps{}{})...",
+            args.output,
+            args.format,
+            args.fps,
+            match (expected_frames, duration) {
+                (Some(n), Some(d)) => format!(", {n} frames, {d:.2} s"),
+                _ => String::new(),
+            },
+            match &background {
+                Some(c) => format!(", background {c}"),
+                None => String::new(),
+            }
+        );
+    }
+
+    let maybe_bar = args.verbose.then(|| progress_bar(expected_frames));
+    let progress = |frame: u32| match expected_frames {
+        Some(total) => RenderProgress::new(frame, total),
+        None => RenderProgress {
+            frame,
+            total_frames: 0,
+            percent: 0.0,
+        },
+    };
+    on_progress(progress(0));
+    let mut frames_seen = 0u32;
+    let mut on_frame = |n: u32| {
+        frames_seen = frames_seen.max(n);
+        if let Some(pb) = &maybe_bar {
+            pb.set_position(n as u64);
+        }
+        on_progress(progress(n));
+    };
+    let result = encode(
+        FfmpegInput::PngStream(stream),
+        &args,
+        &fade_filter,
+        background.as_deref(),
+        &mut on_frame,
+    );
+    if let Some(pb) = &maybe_bar {
+        pb.finish_and_clear();
+    }
+    let mut render_report = result?;
+    let total = expected_frames.unwrap_or(frames_seen);
+    on_progress(RenderProgress::new(total, total));
+
+    if mp4_default_background && has_alpha {
+        let note = "ℹ️ mp4 cannot be transparent, so transparent areas are black. \
+                    Set a background color (--background) to choose another.";
+        render_report.notes =
+            Some(render_report.notes.clone().unwrap_or_default() + &format!("\n{}", note));
+    }
+    render_report.frames_rendered = Some(frames_seen as usize);
+    Ok(finish(&args, render_report))
+}
+
+/// How much of a stream is read up front to check it isn't empty and to see
+/// whether the first frame is transparent.
+const STREAM_PEEK_BYTES: u64 = 64 * 1024;
+
+/// Checked config values every render needs.
+struct Prepared {
+    /// ffmpeg color to paint behind the frames, if any (always set for mp4).
+    background: Option<String>,
+    /// mp4 without a chosen background: transparent areas become black.
+    mp4_default_background: bool,
+}
+
+fn prepare(args: &RenderConfig) -> Result<Prepared, String> {
+    // Validate output path
+    if args.output.is_empty() {
+        return Err("❌ Output path cannot be empty.".into());
+    }
+    if !config::FORMATS.contains(&args.format.as_str()) {
+        return Err(format!(
+            "❌ Unsupported format '{}'. Use one of: {}.",
+            args.format,
+            config::FORMATS.join(", ")
+        ));
+    }
+    if args.fps == 0 {
+        return Err("❌ fps must be greater than 0.".into());
+    }
+    // Normalized again here for callers that build a RenderConfig themselves.
+    let chosen_background = config::parse_background(args.background.as_deref().unwrap_or(""))?;
+    let mp4_default_background = chosen_background.is_none() && args.format == "mp4";
+    Ok(Prepared {
+        background: if mp4_default_background {
+            Some("black".to_string())
+        } else {
+            chosen_background
+        },
+        mp4_default_background,
+    })
+}
+
+/// Check for ffmpeg availability upfront, with install hints if it's missing.
+fn check_ffmpeg(verbose_ffmpeg: bool) -> Result<(), String> {
+    if verbose_ffmpeg {
+        println!("🔍 Checking for ffmpeg...");
+    }
+    let mut ffmpeg_check = Command::new("ffmpeg");
+    ffmpeg_check.arg("-version");
+    if !verbose_ffmpeg {
+        ffmpeg_check.stdout(std::process::Stdio::null());
+        ffmpeg_check.stderr(std::process::Stdio::null());
+    }
+    match ffmpeg_check.status() {
+        Ok(s) if s.success() => Ok(()),
+        Ok(_) => Err("❌ ffmpeg failed to run correctly.".into()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Err(
+            "❌ ffmpeg not found. Install it and make sure it is on your PATH:\n   \
+             macOS: brew install ffmpeg · Ubuntu/Debian: sudo apt install ffmpeg · \
+             Windows: winget install Gyan.FFmpeg"
+                .into(),
+        ),
+        Err(e) => Err(format!("❌ Failed to execute ffmpeg: {}", e)),
+    }
+}
+
+/// The `--verbose` progress bar; a spinner when the frame count is unknown.
+fn progress_bar(frames: Option<u32>) -> ProgressBar {
+    let (pb, template) = match frames {
+        Some(n) => (
+            ProgressBar::new(n as u64),
+            "{spinner:.green} 🌿 Rendering {bar:30.cyan/blue} {pos}/{len} frames {percent:>3}% {elapsed_precise}",
+        ),
+        None => (
+            ProgressBar::new_spinner(),
+            "{spinner:.green} 🌿 Rendering {pos} frames {elapsed_precise}",
+        ),
+    };
+    pb.set_style(
+        ProgressStyle::with_template(template)
+            .unwrap()
+            .tick_chars("䷀䷫䷌䷅䷤䷥䷄䷍䷪")
+            .progress_chars("█▓░"),
+    );
+    pb.enable_steady_tick(Duration::from_millis(120));
+    pb
+}
+
+/// Run the encoder for `args.format`.
+fn encode(
+    input: FfmpegInput,
+    args: &RenderConfig,
+    fade_filter: &str,
+    background: Option<&str>,
+    on_frame: &mut dyn FnMut(u32),
+) -> Result<RenderReport, String> {
+    if args.format == "gif" {
+        ffmpeg::gif::render_gif_from(
+            input,
+            &args.output,
+            args.fps,
+            Some(fade_filter),
+            background,
+            args.verbose_ffmpeg,
+            on_frame,
+        )
+    } else {
+        ffmpeg::video::render_video_from(
+            input,
+            &args.output,
+            args.fps,
+            &args.format,
+            args.bitrate.as_deref(),
+            args.crf,
+            Some(fade_filter),
+            background,
+            args.verbose_ffmpeg,
+            on_frame,
+        )
+    }
+}
+
+/// Warn about an output extension that doesn't match the format, and `--open`.
+fn finish(args: &RenderConfig, mut render_report: RenderReport) -> RenderReport {
     if let Some(ext) = Path::new(&args.output).extension().and_then(|s| s.to_str()) {
         let ext = ext.to_lowercase();
         let expected_ext = match args.format.as_str() {
@@ -278,7 +461,7 @@ where
             eprintln!("⚠️ Failed to open video preview: {}", e);
         }
     }
-    Ok(render_report)
+    render_report
 }
 
 /// The `fade` filters for the configured fade in/out. They fade the alpha channel,

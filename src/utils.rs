@@ -279,17 +279,46 @@ pub fn run_ffmpeg_with_progress(
     echo_stderr: bool,
     on_frame: &mut dyn FnMut(u32),
 ) -> Result<String, String> {
+    run_ffmpeg_with_input(args, output, echo_stderr, on_frame, None)
+}
+
+/// Like [`run_ffmpeg_with_progress`], but feeds `input` to ffmpeg's stdin (for an
+/// `-i pipe:0` input, e.g. a PNG stream). The copy runs on its own thread, so a
+/// slow producer and ffmpeg can't block each other. If reading `input` fails,
+/// the render fails too and the half-written `output` is removed.
+pub fn run_ffmpeg_with_input(
+    args: &[String],
+    output: &str,
+    echo_stderr: bool,
+    on_frame: &mut dyn FnMut(u32),
+    input: Option<Box<dyn std::io::Read + Send>>,
+) -> Result<String, String> {
     use std::io::{BufRead, BufReader, Read};
     use std::process::Stdio;
 
     let mut child = Command::new("ffmpeg")
         .args(["-progress", "pipe:1", "-nostats"])
         .args(args)
-        .stdin(Stdio::null())
+        .stdin(if input.is_some() {
+            Stdio::piped()
+        } else {
+            Stdio::null()
+        })
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
         .map_err(spawn_error)?;
+
+    // Copy the input into ffmpeg; dropping its stdin afterwards signals the end.
+    // A broken pipe means ffmpeg stopped reading (it failed or has enough); its
+    // own exit status reports that, so only real read errors are kept.
+    let writer_thread = input.map(|mut input| {
+        let mut stdin = child.stdin.take().expect("stdin is piped");
+        std::thread::spawn(move || match std::io::copy(&mut input, &mut stdin) {
+            Err(e) if e.kind() != std::io::ErrorKind::BrokenPipe => Err(e),
+            _ => Ok(()),
+        })
+    });
 
     // Read stderr on its own thread so neither pipe can fill up and block ffmpeg.
     let mut stderr_pipe = child.stderr.take().expect("stderr is piped");
@@ -320,11 +349,22 @@ pub fn run_ffmpeg_with_progress(
 
     let status = child.wait().map_err(spawn_error)?;
     let stderr = stderr_thread.join().unwrap_or_default();
+    let input_result = writer_thread.map(|t| t.join());
     if !status.success() {
         let _ = std::fs::remove_file(output);
         return Err(ffmpeg_failure(status, &stderr));
     }
-    Ok(stderr)
+    match input_result {
+        Some(Ok(Err(e))) => {
+            let _ = std::fs::remove_file(output);
+            Err(format!("❌ Failed to read the input stream: {e}"))
+        }
+        Some(Err(_)) => {
+            let _ = std::fs::remove_file(output);
+            Err("❌ The input stream reader crashed.".into())
+        }
+        _ => Ok(stderr),
+    }
 }
 
 /// The ffmpeg filters that paint `color` behind the (transparent) frames, so the

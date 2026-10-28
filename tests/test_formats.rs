@@ -488,3 +488,181 @@ fn library_progress_callback() {
     assert_eq!(seen.last().unwrap().percent, 100.0);
     assert!(seen.windows(2).all(|w| w[0].frame <= w[1].frame));
 }
+
+// ---------------------------------------------------------------------------
+// PNG stream on stdin (`--input -`), 0.7.0
+
+/// The test frames as one PNG stream, in frame order (f_0.png … f_11.png).
+fn png_stream(dir: &Path) -> Vec<u8> {
+    (0..12)
+        .flat_map(|i| std::fs::read(dir.join(format!("f_{i}.png"))).unwrap())
+        .collect()
+}
+
+/// Run the CLI with `stdin` piped in.
+fn render_stdin(args: &[&str], stdin: &[u8]) -> std::process::Output {
+    use std::io::Write;
+    let mut child = bin()
+        .args(args)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut pipe = child.stdin.take().unwrap();
+    let data = stdin.to_vec();
+    // Write on a thread: a large stream must not block on a full pipe.
+    let writer = std::thread::spawn(move || {
+        let _ = pipe.write_all(&data);
+    });
+    let out = child.wait_with_output().unwrap();
+    writer.join().unwrap();
+    if !out.status.success() {
+        eprintln!("{}", String::from_utf8_lossy(&out.stderr));
+    }
+    out
+}
+
+/// One md5 per decoded RGBA frame, to compare two files pixel for pixel.
+fn frame_hashes(file: &Path) -> Vec<String> {
+    let out = Command::new("ffmpeg")
+        .args(["-v", "error", "-i"])
+        .arg(file)
+        .args(["-pix_fmt", "rgba", "-f", "framemd5", "-"])
+        .output()
+        .unwrap();
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .filter(|l| !l.starts_with('#'))
+        .map(|l| l.rsplit(',').next().unwrap().trim().to_string())
+        .collect()
+}
+
+#[test]
+fn stdin_stream_matches_folder_for_every_format() {
+    require_ffmpeg!();
+    let f = frames();
+    let dir = f.path().to_str().unwrap();
+    let stream = png_stream(f.path());
+    for ext in ["webm", "mp4", "gif", "mov"] {
+        let from_dir = f.path().join(format!("dir.{ext}"));
+        let from_pipe = f.path().join(format!("pipe.{ext}"));
+        assert!(render(&["-i", dir, "-o", from_dir.to_str().unwrap()])
+            .status
+            .success());
+        assert!(
+            render_stdin(&["-i", "-", "-o", from_pipe.to_str().unwrap()], &stream)
+                .status
+                .success(),
+            "{ext} from stdin"
+        );
+        assert_eq!(probe(&from_pipe), probe(&from_dir), "{ext}: stream info");
+        let hashes = frame_hashes(&from_pipe);
+        assert_eq!(hashes.len(), 12, "{ext}: frame count");
+        assert_eq!(hashes, frame_hashes(&from_dir), "{ext}: pixels");
+    }
+}
+
+#[test]
+fn stdin_progress_with_and_without_frame_count() {
+    require_ffmpeg!();
+    let f = frames();
+    let stream = png_stream(f.path());
+    let events = |extra: &[&str]| -> Vec<serde_json::Value> {
+        let out = f.path().join("p.webm");
+        let mut args = vec!["-i", "-", "-o", out.to_str().unwrap(), "--progress", "json"];
+        args.extend(extra);
+        let res = render_stdin(&args, &stream);
+        assert!(res.status.success());
+        String::from_utf8_lossy(&res.stdout)
+            .lines()
+            .map(|l| serde_json::from_str(l).expect("every stdout line is JSON"))
+            .collect()
+    };
+
+    // Known count: a real percentage, ending at 100%.
+    let known = events(&["--frames", "12"]);
+    let last = known.iter().rfind(|e| e["event"] == "progress").unwrap();
+    assert_eq!(last["total_frames"], 12);
+    assert_eq!(last["percent"], 100.0);
+    assert_eq!(known.last().unwrap()["frames"], 12);
+
+    // Unknown count: total 0 while running, frames counted at the end.
+    let unknown = events(&[]);
+    assert_eq!(unknown[0]["total_frames"], 0);
+    assert_eq!(unknown.last().unwrap()["event"], "done");
+    assert_eq!(unknown.last().unwrap()["frames"], 12);
+}
+
+#[test]
+fn stdin_fade_out_needs_frame_count() {
+    require_ffmpeg!();
+    let f = frames();
+    let stream = png_stream(f.path());
+    let out = f.path().join("fade.webm");
+    let o = out.to_str().unwrap();
+
+    let res = render_stdin(&["-i", "-", "-o", o, "--fade-out", "0.5"], &stream);
+    assert!(!res.status.success());
+    assert!(String::from_utf8_lossy(&res.stderr).contains("--frames"));
+    assert!(!out.exists());
+
+    let args = [
+        "-i",
+        "-",
+        "-o",
+        o,
+        "--fps",
+        "12",
+        "--frames",
+        "12",
+        "--fade-out",
+        "0.5",
+    ];
+    assert!(render_stdin(&args, &stream).status.success());
+    let vp9 = ["-c:v", "libvpx-vp9"];
+    assert_eq!(alpha_at(&out, 6, &vp9).1, 255, "middle untouched");
+    assert!(alpha_at(&out, 11, &vp9).1 < 64, "fading out at the end");
+}
+
+#[test]
+fn stdin_errors_are_clear_and_leave_no_file() {
+    require_ffmpeg!();
+    let f = frames();
+    let out = f.path().join("err.webm");
+    let o = out.to_str().unwrap();
+    let stderr = |res: std::process::Output| {
+        assert!(!res.status.success());
+        String::from_utf8_lossy(&res.stderr).into_owned()
+    };
+
+    assert!(stderr(render_stdin(&["-i", "-", "-o", o], b"")).contains("empty"));
+    assert!(stderr(render_stdin(&["-i", "-", "-o", o], b"not a png at all")).contains("ffmpeg"));
+    let dir = f.path().to_str().unwrap();
+    assert!(stderr(render(&["-i", dir, "-o", o, "--frames", "12"])).contains("--input -"));
+    let stream = png_stream(f.path());
+    assert!(stderr(render_stdin(&["-i", "-", "-o", o, "--preview"], &stream)).contains("stream"));
+    assert!(!out.exists(), "no half-written output");
+}
+
+#[test]
+fn library_render_stream_from_a_reader() {
+    require_ffmpeg!();
+    let f = frames();
+    let cfg = aether_renderer_core::config::PartialConfig {
+        input: Some("-".into()),
+        output: Some(f.path().join("lib.gif").to_string_lossy().into_owned()),
+        ..Default::default()
+    }
+    .into_config()
+    .unwrap();
+    let reader = std::io::Cursor::new(png_stream(f.path()));
+    let mut seen = Vec::new();
+    let report =
+        aether_renderer_core::render_stream(cfg, reader, Some(12), |p| seen.push(p)).unwrap();
+    assert_eq!(report.frames_rendered, Some(12));
+    assert_eq!(seen.first().unwrap().frame, 0);
+    assert_eq!(seen.last().unwrap().percent, 100.0);
+    assert!(seen.windows(2).all(|w| w[0].frame <= w[1].frame));
+    assert_eq!(frame_hashes(&f.path().join("lib.gif")).len(), 12);
+}

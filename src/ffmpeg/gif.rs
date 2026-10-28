@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use super::FfmpegInput;
 use crate::report::RenderReport;
 use crate::utils;
 
@@ -20,12 +21,30 @@ pub fn render_gif(
     verbose_ffmpeg: bool,
     on_frame: &mut dyn FnMut(u32),
 ) -> Result<RenderReport, String> {
+    render_gif_from(
+        FfmpegInput::Sequence(input_pattern),
+        output,
+        fps,
+        fade_filter,
+        background,
+        verbose_ffmpeg,
+        on_frame,
+    )
+}
+
+/// [`render_gif`] for any [`FfmpegInput`], including a PNG stream on stdin.
+pub(crate) fn render_gif_from(
+    input: FfmpegInput,
+    output: &str,
+    fps: u32,
+    fade_filter: Option<&str>,
+    background: Option<&str>,
+    verbose_ffmpeg: bool,
+    on_frame: &mut dyn FnMut(u32),
+) -> Result<RenderReport, String> {
     let mut args = utils::ffmpeg_base_args(verbose_ffmpeg);
-    args.extend(["-framerate".into(), fps.to_string()]);
-    if input_pattern.contains('*') {
-        args.extend(["-pattern_type".into(), "glob".into()]);
-    }
-    args.extend(["-i".into(), input_pattern.to_string()]);
+    let (input_args, stdin) = input.into_args(fps);
+    args.extend(input_args);
 
     let mut chain = String::from("[0:v]");
     if let Some(f) = fade_filter.filter(|f| !f.is_empty()) {
@@ -54,7 +73,7 @@ pub fn render_gif(
         output.into(),
     ]);
 
-    let stderr = utils::run_ffmpeg_with_progress(&args, output, verbose_ffmpeg, on_frame)?;
+    let stderr = utils::run_ffmpeg_with_input(&args, output, verbose_ffmpeg, on_frame, stdin)?;
     let warnings = utils::scan_ffmpeg_stderr(&stderr);
 
     Ok(RenderReport {
