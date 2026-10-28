@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
 
 ### Added
 - **`--input -`: frames from a PNG stream on stdin** (PNG files back to back), e.g.
