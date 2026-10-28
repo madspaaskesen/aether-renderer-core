@@ -177,7 +177,7 @@ Relative paths are relative to the folder you run the command from.
 
 ```toml
 [dependencies]
-aether-renderer-core = "0.6"
+aether-renderer-core = "0.7"
 ```
 
 ```rust
