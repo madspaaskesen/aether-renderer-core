@@ -266,8 +266,8 @@ Ideas and bug reports are welcome in [issues](https://github.com/madspaaskesen/a
 
 ## 🌿 License & author
 
-MIT. Built and maintained by Mads Paaskesen, Hardcore Websmith at
-[MP-IT](https://mp-it.dk), with 💛 from [Sacred-AI](https://sacred-ai.com).
+MIT. Made by Mads Paaskesen at [Hardcore Websmith](https://hardcorewebsmith.com)
+and [MP-IT](https://mp-it.dk).
 
 Need custom rendering pipelines, video automation or a Rust/Node.js backend?
 [Get in touch](https://mp-it.dk/contact).
