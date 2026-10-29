@@ -17,7 +17,8 @@ aether-renderer-core -i frames/ -o animation.webm
 
 ![Example animation](https://mp-it.dk/images/aether-renderer/sacred-stars-preview.gif)
 
-**[Project page](https://mp-it.dk/projects/aether-renderer)** ·
+**[web2vid.com](https://web2vid.com)** ·
+[Project page](https://mp-it.dk/projects/aether-renderer) ·
 [Download](https://github.com/madspaaskesen/aether-renderer-core/releases) ·
 [GUI app](https://github.com/madspaaskesen/aether-renderer-gui) ·
 [Changelog](CHANGELOG.md)
