@@ -70,7 +70,8 @@ winget install Gyan.FFmpeg     # Windows
 ```
 
 Then either download a binary from [Releases](https://github.com/madspaaskesen/aether-renderer-core/releases)
-(macOS Apple Silicon and Intel, Linux, Windows), or install with Cargo:
+(macOS Apple Silicon and Intel, Linux, Windows), or install with Cargo. The macOS binaries are signed
+and notarized by Apple and the Windows `.exe` is signed (from v0.7.0), so they run without security warnings:
 
 ```bash
 cargo install aether-renderer-core
