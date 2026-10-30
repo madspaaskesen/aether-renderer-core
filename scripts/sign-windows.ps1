@@ -32,7 +32,7 @@ Expand-Archive -Path $zip -DestinationPath $unpacked
 $exe = Get-ChildItem $unpacked -Recurse -Filter "$Crate.exe" | Select-Object -First 1
 if (-not $exe) { throw "$Crate.exe not found in $zipName" }
 
-Write-Host "🔏 Signing $($exe.FullName)"
+Write-Host "Signing $($exe.FullName)"
 & $SignTool sign /sha1 $Thumbprint /tr http://time.certum.pl /td sha256 /fd sha256 /v $exe.FullName
 if ($LASTEXITCODE) { throw "signtool sign failed" }
 & $SignTool verify /pa /all $exe.FullName
@@ -43,4 +43,4 @@ Remove-Item $zip
 Compress-Archive -Path (Join-Path $unpacked "*") -DestinationPath $zip
 gh release upload $Tag $zip --repo $Repo --clobber
 if ($LASTEXITCODE) { throw "gh release upload failed" }
-Write-Host "✅ Signed and uploaded $zipName to $Tag"
+Write-Host "Signed and uploaded $zipName to $Tag"
