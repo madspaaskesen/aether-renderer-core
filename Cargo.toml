@@ -12,12 +12,12 @@ repository = "https://github.com/madspaaskesen/aether-renderer-core"
 readme = "README.md"
 documentation = "https://docs.rs/aether-renderer-core"
 include = [
-    "src/**",
-    "Cargo.toml",
-    "README.md",
-    "CHANGELOG.md",
-    "LICENSE-MIT",
-    "LICENSE-APACHE"
+    "/src/**",
+    "/Cargo.toml",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/LICENSE-MIT",
+    "/LICENSE-APACHE"
 ]
 exclude = [
     ".DS_Store",

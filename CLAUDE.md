@@ -52,9 +52,25 @@ CI (`.github/workflows/ci.yml`) runs fmt + clippy, then tests on Ubuntu, macOS a
 - Tests must handle Windows: build config JSON with `serde_json`, strip `\r` from ffprobe output.
 - Every bug fix gets a test in `tests/test_formats.rs` that renders real frames.
 
+## Branches (release branch flow)
+
+Never commit straight to `main`: it only changes when a version is released.
+
+- When work on a new version starts: `git switch main && git pull && git switch -c release/x.y.z`.
+- Work is committed straight on `release/x.y.z` by default, so the history reads in one line.
+- A separate branch only when it helps, with the version in the name: an experiment that may be
+  thrown away (`try/x.y.z-<topic>`), something risky, or a fix for an already released version
+  (`fix/x.y.z-<topic>` from `main`, released as a patch). Merge it back into the release branch.
+- To release: version + CHANGELOG on the release branch, PR `release/x.y.z` → `main`, merge,
+  then publish and tag (see Releasing).
+- Before the first commit of a session: `git branch --show-current`. On `main`? Switch to the
+  release branch first.
+
 ## Releasing
 
 1. Bump `version` in `Cargo.toml`, add a `## x.y.z` section to `CHANGELOG.md`, update the
    README (version in the library snippet, roadmap).
-2. PR → merge to `main` → tag `vX.Y.Z`; `release.yml` builds the binaries.
-3. `cargo publish` from `main` by hand. Then update the GUI's dependency.
+2. PR `release/x.y.z` → `main`, wait for green CI, merge.
+3. `cargo publish` from `main` by hand, then tag `vX.Y.Z` and publish the GitHub release
+   (`release.yml` builds the binaries). Then update the GUI's and web2vid-backend's dependency.
+   Full steps (signing etc.): `release-checklist.md` in the parent folder / claude.ai project.
