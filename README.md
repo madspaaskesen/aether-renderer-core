@@ -6,7 +6,7 @@
 [![Downloads](https://img.shields.io/crates/d/aether-renderer-core.svg)](https://crates.io/crates/aether-renderer-core)
 [![CI](https://github.com/madspaaskesen/aether-renderer-core/actions/workflows/ci.yml/badge.svg)](https://github.com/madspaaskesen/aether-renderer-core/actions/workflows/ci.yml)
 [![docs.rs](https://docs.rs/aether-renderer-core/badge.svg)](https://docs.rs/aether-renderer-core)
-[![License](https://img.shields.io/crates/l/aether-renderer-core.svg)](LICENSE)
+[![License](https://img.shields.io/crates/l/aether-renderer-core.svg)](#-license--author)
 
 Exported an animation from Blender, After Effects, a canvas or an AI tool as a PNG
 sequence and need it on a website, in a video editor or in a chat? One command:
@@ -292,7 +292,18 @@ Ideas and bug reports are welcome in [issues](https://github.com/madspaaskesen/a
 
 ## 🌿 License & author
 
-MIT. Made by Mads Paaskesen at [Hardcore Websmith](https://hardcorewebsmith.com)
+Licensed under either of
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <https://www.apache.org/licenses/LICENSE-2.0>)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or <https://opensource.org/licenses/MIT>)
+
+at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion
+in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above,
+without any additional terms or conditions.
+
+Made by Mads Paaskesen at [Hardcore Websmith](https://hardcorewebsmith.com)
 and [MP-IT](https://mp-it.dk).
 
 Need custom rendering pipelines, video automation or a Rust/Node.js backend?

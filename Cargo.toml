@@ -3,7 +3,7 @@ name = "aether-renderer-core"
 version = "0.7.0"
 edition = "2021"
 description = "Render PNG image sequences to transparent WebM (VP9), ProRes 4444 MOV, GIF or MP4 with ffmpeg"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 authors = ["Mads Paaskesen <madspaaskesen@gmail.com>"]
 homepage = "https://aetherrenderer.com/core/"
 keywords = ["ffmpeg", "webm", "transparent", "png-sequence", "animation"]
@@ -16,7 +16,8 @@ include = [
     "Cargo.toml",
     "README.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
 ]
 exclude = [
     ".DS_Store",

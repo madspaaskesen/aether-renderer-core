@@ -41,7 +41,7 @@ jobs:
         run: |
           dir=release-${{ matrix.name }}
           mkdir -p "$dir" dist
-          cp README.md LICENSE CHANGELOG.md "$dir"/
+          cp README.md LICENSE-MIT LICENSE-APACHE CHANGELOG.md "$dir"/
           [ -f SUPPORT.md ] && cp SUPPORT.md "$dir"/
           cp -r examples "$dir"/
           bin=target/${{ matrix.target }}/release/aether-renderer-core

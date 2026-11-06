@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- **License: MIT OR Apache-2.0** (was MIT only), the usual choice for Rust crates. Apache-2.0 adds
+  an explicit patent grant. Earlier versions stay MIT.
+
 ## 0.7.0
 
 ### Added
